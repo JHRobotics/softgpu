@@ -3,10 +3,10 @@
 ![SoftGPU animated logo](/resource/softgpu.webp)
 
 This is ready-to-use compilation of my 4 projects:
-VMDisp9x: https://github.com/JHRobotics/vmdisp9x
-Mesa3D for 9x: https://github.com/JHRobotics/mesa9x
-WineD3D for 9x: https://github.com/JHRobotics/wine9x
-OpenGlide for 9x: https://github.com/JHRobotics/openglide9x
+- VMDisp9x: https://github.com/JHRobotics/vmdisp9x
+- Mesa3D for 9x: https://github.com/JHRobotics/mesa9x
+- WineD3D for 9x: https://github.com/JHRobotics/wine9x
+- OpenGlide for 9x: https://github.com/JHRobotics/openglide9x
 
 ## Requirements
 1) Virtual machine with one of these VGA adapter support:

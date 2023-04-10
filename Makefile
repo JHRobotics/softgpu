@@ -7,6 +7,16 @@ EXE_SUFFIX = .exe
 LDFLAGS=-static
 LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lsetupapi -lkernel32 -lshell32 -Wl,-subsystem,windows
 
+SOFTGPU_PATCH=2023
+
+NULLOUT=$(if $(filter $(OS),Windows_NT),NUL,/dev/null)
+
+GIT      ?= git
+GIT_IS   := $(shell $(GIT) rev-parse --is-inside-work-tree 2> $(NULLOUT))
+ifeq ($(GIT_IS),true)
+  VERSION_BUILD := $(shell $(GIT) rev-list --count main)
+endif
+
 NOCRT=1
 
 all: $(EXE_NAME)$(EXE_SUFFIX)
@@ -33,6 +43,14 @@ ifdef NOCRT
 
   LDFLAGS += -nostdlib -nodefaultlibs -lgcc
   CFLAGS  += -Inocrt -DNOCRT -DNOCRT_FILE -DNOCRT_FLOAT -DNOCRT_MEM -ffreestanding -nostdlib
+endif
+
+CFLAGS    += -DSOFTGPU_PATCH=$(SOFTGPU_PATCH)
+RES_FLAGS += -DSOFTGPU_PATCH=$(SOFTGPU_PATCH)
+
+ifdef VERSION_BUILD
+  CFLAGS    += -DSOFTGPU_BUILD=$(VERSION_BUILD)
+  RES_FLAGS += -DSOFTGPU_BUILD=$(VERSION_BUILD)
 endif
 
 %.c.o: %.c $(DEPS)

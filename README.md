@@ -19,6 +19,9 @@ This is ready-to-use compilation of my 4 projects:
       - Visual C runtime (version 6 included in package)
       - OpenGL 95 for versions without `opengl32.dll` (included in package)
 
+## Download
+ISO image or ZIP package can be downloaded on release page: https://github.com/JHRobotics/softgpu/releases/
+
 ## Installation:
 0) Setup the Virtual Machine
 1) Copy installation files on formatted HDD and apply **patcher9x** [Optional but recommended]

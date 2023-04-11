@@ -10,11 +10,11 @@ This is ready-to-use compilation of my 4 projects:
 
 ## Requirements
 1) Virtual machine with one of these VGA adapter support:
-   a) Bochs VBE (Bochs, VirtualBox, Qemu)
-   b) VMware SVGA-II (VMware, VirtualBox, Qemu)
+   - A) Bochs VBE (Bochs, VirtualBox, Qemu)
+   - B) VMware SVGA-II (VMware, VirtualBox, Qemu)
 2) Windows 95/98/Me as VM guest system
-   a) Windows 98/Me - required is last version of DirectX 9 (included in package)
-   b) Windows 95
+   - A) Windows 98/Me - required is last version of DirectX 9 (included in package)
+   - B) Windows 95
       - Last version of DirectX 8 (included in package)
       - Visual C runtime (version 6 included in package)
       - OpenGL 95 for versions without `opengl32.dll` (included in package)
@@ -79,54 +79,56 @@ There are many bugs in individual components, please post them to individual rep
 But still, please be patient. SoftGPU compatibility target is about a decade of intensive HW and SW development (from DOS direct VGA/VESA access, SW rendering through GDI, DirectDraw, OpenGL, Glide, DirectX, OpenGL again). After all, there will still applications that cannot be run anyway because there are written for very individual SW/HW combinations.
 
 ## Compilation from source
-1) You need MINGW and MAKE to create GUI setup
+1) You need MINGW and *GNU make* to build *softgpu.exe*
 2) You need all development tool to compile all other component (see README.md in individual repositories)
-3) Compile softgpu.exe by type make (GNU make required)
-4) Compile VMDisp9x and copy files boxvmini.drv, vmwsmini.drv, vmwsmini.vxd, vmdisp9x.inf and place them to driver/win95 and driver/win98me folder
+3) Compile softgpu.exe by type `make`
+4) Compile VMDisp9x and copy files `boxvmini.drv`, `vmwsmini.drv`, `vmwsmini.vxd`, `vmdisp9x.inf` and place them to `driver/win95` and `driver/win98me` folder
 5) Compile Mesa9x for Windows 95 (e.g., without SSE) and copy and rename files to following schema
-   - vmwsgl32.dll       => driver/win95/vmwsgl32.dll
-   - opengl32.w98me.dll => driver/win95/extra/opengl32.dll
-   - mesa3d.w98me.dll   => driver/win95/mesa3d.dll
-   - glchecker.exe      => tools/glchecker.exe
-   - icdtest.exe        => tools/icdtest.exe
-   - wgltest.exe        => tools/wgltest.exe
-   - [folder] glchecker => tools/glchecker
+   - `vmwsgl32.dll`       => `driver/win95/vmwsgl32.dll`
+   - `opengl32.w98me.dll` => `driver/win95/extra/opengl32.dll`
+   - `mesa3d.w98me.dll`   => `driver/win95/mesa3d.dll`
+   - `glchecker.exe`      => `tools/glchecker.exe`
+   - `icdtest.exe`        => `tools/icdtest.exe`
+   - `wgltest.exe`        => `tools/wgltest.exe`
+   - [folder] `glchecker` => `tools/glchecker`
 6) Compile Mesa9x for Windows 98 and Me (eq. with SSE, optimized for Core2 or Westmere) and copy these files
-   - vmwsgl32.dll       => driver/win98me/vmwsgl32.dll
-   - opengl32.w98me.dll => driver/win98me/extra/opengl32.dll
-   - mesa3d.w98me.dll   => driver/win98me/mesa3d.dll
+   - `vmwsgl32.dll`       => `driver/win98me/vmwsgl32.dll`
+   - `opengl32.w98me.dll` => `driver/win98me/extra/opengl32.dll`
+   - `mesa3d.w98me.dll`   => `driver/win98me/mesa3d.dll`
 7) Compile Wine9x for Windows 95 and copy
-   - ddraw.dll          => driver/win95/ddraw.dll
-   - d3d8.dll           => driver/win95/d3d8.dll
-   - d3d9.dll           => driver/win95/d3d9.dll
-   - dwine.dll          => driver/win95/dwine.dll
-   - wined3d.dll        => driver/win95/wined3d.dll
+   - `ddraw.dll`          => `driver/win95/ddraw.dll`
+   - `ddrawme.dll`        => `driver/win95/ddrawme.dll`
+   - `d3d8.dll`           => `driver/win95/d3d8.dll`
+   - `d3d9.dll`           => `driver/win95/d3d9.dll`
+   - `dwine.dll`          => `driver/win95/dwine.dll`
+   - `wined3d.dll`        => `driver/win95/wined3d.dll`
 8) Compile Wine9x for Windows 98+Me and copy
-   - ddraw.dll          => driver/win98me/ddraw.dll
-   - d3d8.dll           => driver/win98me/d3d8.dll
-   - d3d9.dll           => driver/win98me/d3d9.dll
-   - dwine.dll          => driver/win98me/dwine.dll
-   - wined3d.dll        => driver/win98me/wined3d.dll
-9) make ddreplacer.exe (by typing make ddreplacer.exe in Wine9x)
+   - `ddraw.dll`          => `driver/win98me/ddraw.dll`
+   - `ddrawme.dll`        => `driver/win95/ddrawme.dll`
+   - `d3d8.dll`           => `driver/win98me/d3d8.dll`
+   - `d3d9.dll`           => `driver/win98me/d3d9.dll`
+   - `dwine.dll`          => `driver/win98me/dwine.dll`
+   - `wined3d.dll`        => `driver/win98me/wined3d.dll`
+9) make `ddreplacer.exe` (by typing make ddreplacer.exe in Wine9x)
 10) Extract original ddraw.dll from DX8 redistributable for W95 and type
 ```
-ddreplacer path/to/extracted/ddraw.dll ddr95.dll
+ddreplacer `path/to/extracted/ddraw.dll` `ddr95.dll`
 ```
-   - copy ddr95.dll => driver/win95/dx/ddr95.dll
-   - copy ddr95.dll => driver/win98me/dx/ddr95.dll
+   - copy `ddr95.dll` => `driver/win95/dx/ddr95.dll`
+   - copy `ddr95.dll` => `driver/win98me/dx/ddr95.dll`
 11) Extract original ddraw.dll from newer DX9 redistributable (doesn't matter if it's final one, this file doesn't seem to change often) and type
 ```
 ddreplacer path/to/extracted/ddraw.dll ddr95.dll
 ```
-   - copy ddr98.dll => driver/win95/dx/ddr98.dll
-   - copy ddr98.dll => driver/win98me/dx/ddr98.dll
+   - copy `ddr98.dll` => `driver/win95/dx/ddr98.dll`
+   - copy `ddr98.dll` => `driver/win98me/dx/ddr98.dll`
 12) Compile OpenGlide9x for Windows 95 and copy
-   - glide2x.dll        => driver/win95/glide2x.dll
-   - glide3x.dll        => driver/win95/glide3x.dll
+   - `glide2x.dll`        => `driver/win95/glide2x.dll`
+   - `glide3x.dll`        => `driver/win95/glide3x.dll`
 13) Compile OpenGlide9x for Windows 98 and copy
-   - glide2x.dll        => driver/win98me/glide2x.dll
-   - glide3x.dll        => driver/win98me/glide3x.dll
-14) Edit both driver/win95/vmdisp9x.inf and driver/win98me/vmdisp9x.inf and uncomment files and that you added. CopyFiles options have to look like:
+   - `glide2x.dll`        => `driver/win98me/glide2x.dll`
+   - `glide3x.dll`        => `driver/win98me/glide3x.dll`
+14) Edit both `driver/win95/vmdisp9x.inf` and `driver/win98me/vmdisp9x.inf` and uncomment files and that you added. CopyFiles options have to look like:
 ```
 CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy
 ```

@@ -98,7 +98,7 @@ void about(HWND hwnd)
 #define BTN_EXIT    12
 #define BTN_INSTALL 13
 #define CHBX_GL95   14
-#define BTN_ABOUT   14
+#define BTN_ABOUT   15
 
 static float rdpiX = 1.0;
 static float rdpiY = 1.0;
@@ -124,13 +124,88 @@ version_t WINVER2K = {5,0,0,0};
 static BOOL isNT    = FALSE;
 version_t sysver = {0};
 static version_t dxver  = {0};
-static BOOL hasCRT = FALSE;
-static BOOL hasSETUPAPI = FALSE;
-static BOOL hasSSE2 = FALSE;
-static BOOL hasAVX = FALSE;
-static BOOL hasOpengl = FALSE;
+static BOOL     hasCRT = FALSE;
+static BOOL     hasSETUPAPI = FALSE;
+static uint32_t hasSSE2 = 0;
+static uint32_t hasAVX = 0;
+static BOOL     hasOpengl = FALSE;
 
 static char sysinfomsg[1024];
+
+void readCPUInfo()
+{
+	/* AVX avaibility by intel atricle:
+	http://software.intel.com/en-us/blogs/2011/04/14/is-avx-enabled/ */
+	__asm(
+		"pusha\n"
+		"xorl %%eax, %%eax\n"
+		"cpuid\n"
+		"cmpl $1, %%eax\n"             // does CPUID support eax = 1?
+		"jb not_supported\n"
+		"movl $1, %%eax\n"
+		"cpuid\n"
+		"andl $0x18000000, %%ecx\n"   // check 27 bit (OS uses XSAVE/XRSTOR)
+		"cmpl $0x18000000, %%ecx\n"   // and 28 (AVX supported by CPU)
+		"jne not_supported\n"
+		"xorl %%ecx, %%ecx\n"          // XFEATURE_ENABLED_MASK/XCR0 register number = 0
+		"xgetbv\n"                     // XFEATURE_ENABLED_MASK register is in edx:eax
+		"andl $6, %%eax\n"
+		"cmpl $6, %%eax\n"              // check the AVX registers restore at context switch
+		"jne not_supported\n"
+		"movl $1, %0\n"
+		"jmp end\n"
+		"not_supported:\n"
+		"movl $0, %0\n"
+		"end:\n"
+		"popa" : "=m" (hasAVX));
+  
+	if(version_compare(&sysver, &WINVER98) >= 0) /* in 98 SSE supported if they are present */
+	{
+		__asm(
+			"pusha\n"
+			"xorl %%eax, %%eax\n"
+			"cpuid\n"
+			"cmpl $1, %%eax\n"             // does CPUID support eax = 1?
+			"jb not_supported_sse\n"
+			"movl $1, %%eax\n"
+			"cpuid\n"
+			"andl $0x06000000, %%edx\n"   // check 25 and 26 - SSE and SSE2
+			"cmpl $0x06000000, %%edx\n" 
+			"jne not_supported_sse\n"
+			"movl $1, %0\n"
+			"jmp end_sse\n"
+			"not_supported_sse:\n"
+			"movl $0, %0\n"
+			"end_sse:\n"
+			"popa" : "=m" (hasSSE2));
+	}
+	else
+	{
+		/*
+		 * win 95, if XSAVE is enable, SSE present too, I need write better test
+		 * (probably exec some sse instruction and catch exeption)
+		 *
+		 */
+	  __asm(
+			"pusha\n"
+			"xorl %%eax, %%eax\n"
+			"cpuid\n"
+			"cmpl $1, %%eax\n"
+			"jb not_supported_sse95\n"
+			"mov $1, %%eax\n"
+			"cpuid\n"
+			"andl $0x08000000, %%ecx\n" // we simly check for enable xstore
+			"cmpl $0x08000000, %%ecx\n" // i still haven't come up with better test
+			"jne not_supported_sse95\n"
+			"movl $1, %0\n"
+			"jmp end_sse95\n"
+			"not_supported_sse95:\n"
+			"movl $0, %0\n"
+			"end_sse95:\n"
+			"popa" : "=m" (hasSSE2));
+	}
+  
+}
 
 void softgpu_sysinfo()
 {
@@ -158,8 +233,10 @@ void softgpu_sysinfo()
 		FreeLibrary(testLib);
 	}
 	
-	hasSSE2 = __builtin_cpu_supports("sse2") > 0;
-	hasAVX = __builtin_cpu_supports("avx") > 0;
+	readCPUInfo();
+	
+	//hasSSE2 = __builtin_cpu_supports("sse2") > 0;
+	//hasAVX = __builtin_cpu_supports("avx") > 0;
 	
 	sprintf(sysinfomsg, "System informations:\n"
 		"System version: %d.%d.%d.%d\n"
@@ -595,6 +672,8 @@ int main(int argc, const char *argv[])
 {
 	MSG msg; 
 	HINSTANCE hInst = GetModuleHandle(NULL);
+	
+	//__builtin_cpu_init();
 	
 	(void)argc;
 	(void)argv;

@@ -579,9 +579,9 @@ BOOL simd95(HWND hwnd)
 		if(CopyFileA("C:\\autoexec.bat", "C:\\autoexec.bak", FALSE))
 		{
 			//liner("C:\\autoexec.bak", "C:\\autoexec.new", simd95rules);
-			
-			addLine("C:\\autoexec.bat", "C:\\simd95.com\r\n");
 		}
+		
+		addLine("C:\\autoexec.bat", "C:\\simd95.com\r\n");
 	}
 	
 	return TRUE;

@@ -103,6 +103,27 @@ void about(HWND hwnd)
 static float rdpiX = 1.0;
 static float rdpiY = 1.0;
 
+typedef struct _settings_item_t
+{
+	DWORD menu;
+	DWORD pos;
+} settings_item_t;
+
+const settings_item_t settings[] = 
+{
+	{CHBX_MSCRT,  0},
+	{CHBX_DX,     1},
+	{RAD_NORMAL,  2},
+	{CHBX_WINE,   3},
+	{CHBX_GLIDE,  4},
+	{CHBX_SIMD95, 5},
+	{CHBX_FIXES,  6},
+	{BTN_ABOUT,   7},
+	{0, 0}
+};
+
+DWORD settings_data = 0;
+
 #define DPIX(_spx) ((int)(ceil((_spx)*rdpiX)))
 #define DPIY(_spx) ((int)(ceil((_spx)*rdpiY)))
 
@@ -131,6 +152,45 @@ static uint32_t hasAVX = 0;
 static BOOL     hasOpengl = FALSE;
 
 static char sysinfomsg[1024];
+
+static BOOL isSettingSet(DWORD menu)
+{
+	const settings_item_t *s;
+	for(s = &settings[0]; s->menu != 0; s++)
+	{
+		if(s->menu == menu)
+		{
+			DWORD p = ((settings_data) >> s->pos) & 0x1;
+			if(p == 0)
+			{
+				return TRUE;
+			}
+			else
+			{
+				return FALSE;
+			}
+		}
+	}
+	
+	return FALSE;
+}
+
+static void writeSettings(HWND hwnd)
+{
+	const settings_item_t *s;
+	
+	DWORD new_data = 0;
+	
+	for(s = &settings[0]; s->menu != 0; s++)
+	{
+		if(!IsDlgButtonChecked(hwnd, s->menu))
+		{
+			new_data |= 1 << s->pos;
+		}
+	}
+	
+	registryWriteDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup", new_data);
+}
 
 void readCPUInfo()
 {
@@ -375,6 +435,7 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			{
 				CheckDlgButton(hwnd, CHBX_IE, BST_CHECKED);
 			}*/
+			
 			HWND btnGL = CreateWindowA("BUTTON", "Install OpenGL 95",
 				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
 				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 0*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
@@ -383,7 +444,10 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			{
 				if(!hasOpengl)
 				{
-					CheckDlgButton(hwnd, CHBX_GL95, BST_CHECKED);
+					if(isSettingSet(CHBX_GL95))
+					{
+						CheckDlgButton(hwnd, CHBX_GL95, BST_CHECKED);
+					}
 				}
 			}
 			else
@@ -398,7 +462,10 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 				hwnd, (HMENU)CHBX_MSCRT, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
 			if(!hasCRT)
 			{
-				CheckDlgButton(hwnd, CHBX_MSCRT, BST_CHECKED);
+				if(isSettingSet(CHBX_MSCRT))
+				{
+					CheckDlgButton(hwnd, CHBX_MSCRT, BST_CHECKED);
+				}
 			}
 			
 			/* directx checkbox */			
@@ -406,11 +473,12 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
 				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 2*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
 				hwnd, (HMENU)CHBX_DX, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			
-			
 			if(version_compare(&dxver, &dxtarget) < 0)
 			{
-				CheckDlgButton(hwnd, CHBX_DX, BST_CHECKED);
+				if(isSettingSet(CHBX_DX))
+				{
+					CheckDlgButton(hwnd, CHBX_DX, BST_CHECKED);
+				}
 			}
 			
 			/* SSE/non SSE instalation type */
@@ -437,13 +505,19 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
 				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 6*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
 				hwnd, (HMENU)CHBX_WINE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			CheckDlgButton(hwnd, CHBX_WINE, BST_CHECKED);
+			if(isSettingSet(CHBX_WINE))
+			{
+				CheckDlgButton(hwnd, CHBX_WINE, BST_CHECKED);
+			}
 			
 			CreateWindowA("BUTTON", "Install Glide wrapper (OpenGlide9x)",
 				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
 				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 7*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
 				hwnd, (HMENU)CHBX_GLIDE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			CheckDlgButton(hwnd, CHBX_GLIDE, BST_CHECKED);
+			if(isSettingSet(CHBX_GLIDE))
+			{
+				CheckDlgButton(hwnd, CHBX_GLIDE, BST_CHECKED);
+			}
 			
 			HWND btnSIMD95 = CreateWindowA("BUTTON", "Enable SSE/AVX hack",
 				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
@@ -453,7 +527,10 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			{
 				if(!hasAVX)
 				{
-					CheckDlgButton(hwnd, CHBX_SIMD95, BST_CHECKED);
+					if(isSettingSet(CHBX_SIMD95))
+					{
+						CheckDlgButton(hwnd, CHBX_SIMD95, BST_CHECKED);
+					}
 				}
 			}
 			else
@@ -466,7 +543,10 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
 				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 9*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
 				hwnd, (HMENU)CHBX_FIXES, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			CheckDlgButton(hwnd, CHBX_FIXES, BST_CHECKED);
+			if(isSettingSet(CHBX_FIXES))
+			{
+				CheckDlgButton(hwnd, CHBX_FIXES, BST_CHECKED);
+			}
 			
 			CreateWindowA("STATIC", "Install path:",
 				WS_VISIBLE | WS_CHILD | SS_LEFT,
@@ -530,6 +610,8 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 					{
 						DWORD sty = GetWindowLongA(installbtn, GWL_STYLE) | WS_DISABLED;
 						SetWindowLongA(installbtn, GWL_STYLE, sty);
+						
+						writeSettings(hwnd);
 					}
 					
 					setInstallPath(pathinput);
@@ -620,6 +702,7 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 					
 					break;
 				case BTN_EXIT:
+					//writeSettings(hwnd);
 					PostQuitMessage(0);
 					break;
 				case BTN_ABOUT:
@@ -673,14 +756,13 @@ int main(int argc, const char *argv[])
 	MSG msg; 
 	HINSTANCE hInst = GetModuleHandle(NULL);
 	
-	//__builtin_cpu_init();
-	
 	(void)argc;
 	(void)argv;
+	
+	registryReadDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup", &settings_data);
 
   hasSETUPAPI = loadSETUAPI();
   
-
   softgpu_sysinfo();
 
   setHightDPI();

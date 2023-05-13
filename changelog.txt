@@ -1,4 +1,4 @@
-0.4.2023.10
+0.4.2023.11
 ! R5G6B5 surface workaround - fixed black screen on (mostly) NVIDIA GPUs
 - large Wine (DirectX) update
 

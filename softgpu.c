@@ -119,6 +119,7 @@ const settings_item_t settings[] =
 	{CHBX_SIMD95, 5},
 	{CHBX_FIXES,  6},
 	{BTN_ABOUT,   7},
+	{CHBX_GL95,   8},
 	{0, 0}
 };
 

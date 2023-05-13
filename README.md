@@ -74,6 +74,15 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVG
   - On 95 you can still run **dxdiag**, but if you run test, you only see black screens, but again, games (if supporting 95) games should usually run
 
 ## Bugs
+Currently there are known these limitations:
+
+### Vertex Shaders
+Vertex shaders not working correctly with HW acceleration. You can see it, for example, with 3D Mark 2001/2003 tests. Using shaders is very rare in DirectX 8 games, but very common in DirectX 9 games (on other hand, these are usually games after Windows 9x era). As temporary solution you can turn off HW acceleration (but rendering will be much slower).
+
+### Windows 95 support
+Windows 95 support is limited - SoftGPU works, but there lots of extra bugs will appear and if you haven't any special reasons for using Windows 95 use recommended Windows 98 Second edition instead.
+
+### Other bugs
 There are many bugs in individual components, please post them to individual repositories based on bugged application (DirectX, Glide, OpenGL).
 
 But still, please be patient. SoftGPU compatibility target is about a decade of intensive HW and SW development (from DOS direct VGA/VESA access, SW rendering through GDI, DirectDraw, OpenGL, Glide, DirectX, OpenGL again). After all, there will still applications that cannot be run anyway because there are written for very individual SW/HW combinations.
@@ -112,7 +121,7 @@ But still, please be patient. SoftGPU compatibility target is about a decade of 
 9) make `ddreplacer.exe` (by typing make ddreplacer.exe in Wine9x)
 10) Extract original ddraw.dll from DX8 redistributable for W95 and type
 ```
-ddreplacer `path/to/extracted/ddraw.dll` `ddr95.dll`
+ddreplacer path/to/extracted/ddraw.dll ddr95.dll
 ```
    - copy `ddr95.dll` => `driver/win95/dx/ddr95.dll`
    - copy `ddr95.dll` => `driver/win98me/dx/ddr95.dll`

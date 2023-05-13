@@ -221,8 +221,10 @@ static HMODULE hSETUPAPI = NULL;
 BOOL loadSETUAPI()
 {
 #ifdef SETUPAPI_DYN
-  /* shutup this cast warning */
-  #pragma GCC diagnostic ignored "-Wcast-function-type"
+  /* shut up this cast warning */
+# if __GNUC__ > 4
+#  pragma GCC diagnostic ignored "-Wcast-function-type"
+# endif
 
 	hSETUPAPI = LoadLibraryA("SETUPAPI.dll");
 	if(hSETUPAPI != NULL)

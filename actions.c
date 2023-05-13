@@ -578,7 +578,7 @@ BOOL simd95(HWND hwnd)
 	{
 		if(CopyFileA("C:\\autoexec.bat", "C:\\autoexec.bak", FALSE))
 		{
-			//liner("C:\\autoexec.bak", "C:\\autoexec.new", simd95rules);
+			liner("C:\\autoexec.bak", "C:\\autoexec.bat", simd95rules);
 		}
 		
 		addLine("C:\\autoexec.bat", "C:\\simd95.com\r\n");
@@ -599,12 +599,27 @@ BOOL apply_reg_fixes(HWND hwnd)
 		const char *p = strchr(line, ';');
 		if(p)
 		{
-			memcpy(buf, line, p-line);
-			buf[p-line] = '\0';
-			
-			if(strlen(buf) > 0 && strlen(p+1) > 0)
+			if(strstr(p, ";DWORD:") == p)
 			{
-				registryWrite(buf, p+1, WINREG_STR);
+				memcpy(buf, line, p-line);
+				buf[p-line] = '\0';
+				
+				p += sizeof(";DWORD:")-1;
+				
+				if(strlen(buf) > 0 && strlen(p) > 0)
+				{
+					registryWrite(buf, p, WINREG_DWORD);
+				}
+			}
+			else
+			{
+				memcpy(buf, line, p-line);
+				buf[p-line] = '\0';
+			
+				if(strlen(buf) > 0 && strlen(p+1) > 0)
+				{
+					registryWrite(buf, p+1, WINREG_STR);
+				}
 			}
 		}
 	}

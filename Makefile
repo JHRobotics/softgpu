@@ -6,6 +6,7 @@ EXE_NAME = softgpu
 EXE_SUFFIX = .exe
 LDFLAGS=-static
 LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lsetupapi -lkernel32 -lshell32 -Wl,-subsystem,windows
+#LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lsetupapi -lkernel32 -lshell32 -Wl,-subsystem,console
 
 SOFTGPU_PATCH=2023
 

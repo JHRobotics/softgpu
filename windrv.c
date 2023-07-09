@@ -32,6 +32,7 @@
 #include <setupapi.h>
 #include <initguid.h>
 #include <devguid.h>
+#include <cfgmgr32.h> /* CM_DEVCAP_Xxx constants */
 
 #include "windrv.h"
 #include "winreg.h"
@@ -68,8 +69,20 @@ static const drivers_list_t knowndrivers[]=
 	{"VBox VGA",    "PCI\\VEN_80EE&DEV_BEEF&SUBSYS_00000000&REV_00", "VBox"},
 	{"VBox SVGA",   "PCI\\VEN_80EE&DEV_BEEF&SUBSYS_040515AD&REV_00", "VBoxSvga"},
 	{"VMWare SVGA", "PCI\\VEN_15AD&DEV_0405&SUBSYS_040515AD&REV_00", "VMSvga"},
+	{"QEMU STD VGA","PCI\\VEN_1234&DEV_1111&",                       "Qemu"},
 	{NULL,          NULL,                                            NULL}
 };
+
+static const char *pci_ids[] = {
+	"*PNP0A03",               /* PCI bus */
+	"ACPI\\VEN_PNP&DEV_0A03", /* PCI bus (NT) */
+	"*PNP0A08",               /* PCI Express root bus */
+	"ACPI\\VEN_PNP&DEV_0A08", /* PCI Express root bus (NT) */
+	"*PNP0C00",               /* PCI bus (qemu) */
+	NULL
+};
+
+static const char non_pci_vga[] = "*PNP0900";
 
 typedef DWORD (WINAPI *GetVersionFunc)(void);
 
@@ -282,7 +295,8 @@ const char *getVGAadapter(HDEVINFO DeviceInfoSet, SP_DEVINFO_DATA *did_out)
 			{
 				for(const drivers_list_t *driver = &(knowndrivers[0]); driver->name != NULL; driver++)
 				{
-					if(stricmp(driver->hwid, hwid_str) == 0)
+					size_t driver_hwid_len = strlen(driver->hwid);
+					if(strnicmp(driver->hwid, hwid_str, driver_hwid_len) == 0)
 					{
 						memcpy(did_out, &DeviceInfoData, sizeof(SP_DEVINFO_DATA));
 						return driver->section;
@@ -295,6 +309,109 @@ const char *getVGAadapter(HDEVINFO DeviceInfoSet, SP_DEVINFO_DATA *did_out)
 	}
 	
 	return NULL;
+}
+
+static DWORD checkInstallatioListLookup(HDEVINFO DeviceInfoSet)
+{
+	static char device_id[1024];
+	int DeviceIndex = 0;
+	SP_DEVINFO_DATA DeviceInfoData;
+	int count_legacy_vga = 0;
+	int count_pci_bus = 0;
+	DWORD ret = CHECK_DRV_OK;
+	const char *test_id;
+	int i;
+	
+	if(DeviceInfoSet)
+	{
+		ZeroMemory(&DeviceInfoData, sizeof(SP_DEVINFO_DATA));
+		DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+		DeviceIndex = 0;
+		
+		while(DYN(SetupDiEnumDeviceInfo)(DeviceInfoSet, DeviceIndex, &DeviceInfoData))
+		{
+			if(DYN(SetupDiGetDeviceRegistryPropertyA)(DeviceInfoSet, &DeviceInfoData, SPDRP_HARDWAREID, NULL, (PBYTE)&(device_id[0]), sizeof(device_id), NULL))
+			{
+				for(test_id = pci_ids[0], i = 0; test_id != NULL; test_id = pci_ids[++i])
+				{
+					if(stricmp(device_id, test_id) == 0)
+					{
+						DWORD camps = 0;
+						if(DYN(SetupDiGetDeviceRegistryPropertyA)(DeviceInfoSet, &DeviceInfoData, SPDRP_CAPABILITIES, NULL, (PBYTE)&(camps), sizeof(camps), NULL))
+						{
+							if((camps & CM_DEVCAP_HARDWAREDISABLED) == 0)
+							{
+								count_pci_bus++;
+							}
+						}
+						break;
+					}
+				}
+
+				if(stricmp(device_id, non_pci_vga) == 0)
+				{
+					count_legacy_vga++;
+				}
+			}
+	    DeviceIndex++;
+	  }
+	}
+	
+	if(count_pci_bus == 0)
+	{
+		ret |= CHECK_DRV_NOPCI;
+	}
+	
+	if(count_legacy_vga != 0)
+	{
+		ret |= CHECK_DRV_LEGACY_VGA;
+	}
+	
+	return ret;
+}
+
+DWORD checkInstallation()
+{
+  HDEVINFO hDevInfo;
+  DWORD ret = 0;
+
+  /* Enumerate all display adapters */
+  hDevInfo = DYN(SetupDiGetClassDevsA)(NULL, NULL, NULL, DIGCF_PRESENT | DIGCF_ALLCLASSES);
+
+  if(hDevInfo == INVALID_HANDLE_VALUE)
+  {
+  	REPORT("SetupDiCreateDeviceInfoList: %ld", GetLastError());
+    return CHECK_DRV_FAIL;
+  }
+
+  /* Read the drivers from the inf file */
+  if (!DYN(SetupDiBuildDriverInfoList)(hDevInfo, NULL, SPDIT_CLASSDRIVER))
+	{
+		REPORT("SetupDiBuildDriverInfoList: %ld", GetLastError());
+		DYN(SetupDiDestroyDeviceInfoList)(hDevInfo);
+		return CHECK_DRV_FAIL;
+	}
+	
+	ret = checkInstallatioListLookup(hDevInfo);
+
+  /* Cleanup */
+	DYN(SetupDiDestroyDeviceInfoList)(hDevInfo);
+
+  return ret;
+}
+
+static void set32bpp()
+{
+	DEVMODEA mode;
+	memset(&mode, 0, sizeof(DEVMODEA));
+	mode.dmSize = sizeof(DEVMODEA);
+	mode.dmSpecVersion = DM_SPECVERSION;
+	mode.dmBitsPerPel = 32;
+	mode.dmPelsWidth  = 640;
+	mode.dmPelsHeight = 480;
+	mode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+	
+	ChangeDisplaySettingsA(&mode, CDS_UPDATEREGISTRY | CDS_NORESET);
 }
 
 BOOL installVideoDriver(const char *szDriverDir, const char *infName)
@@ -468,15 +585,7 @@ BOOL installVideoDriver(const char *szDriverDir, const char *infName)
   closeAndDestroy(hDevInfo, hInf);
   
   /* set screen color depth to some usable value */
-  DWORD BitsPerPixel = 0;
-  if(registryReadDWORD("HKCC\\Display\\Settings\\BitsPerPixel", &BitsPerPixel))
-  {
-  	if(BitsPerPixel <= 8)
-  	{
-  		registryWriteDWORD("HKCC\\Display\\Settings\\BitsPerPixel", 32);
-  	}
-  }
-   
+  set32bpp();
 
   return TRUE;
 }

@@ -10,6 +10,7 @@
 # generated and temporary files
 *.o
 *.bak
+*.backup
 *.tmp
 *.gen
 *.exe

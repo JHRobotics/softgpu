@@ -317,6 +317,7 @@ BOOL proc_wait(HWND hwnd)
 
 extern version_t sysver;
 extern version_t WINVER98SE;
+extern version_t WINVER98;
 
 void install_infobox(HWND hwnd, const char *name)
 {
@@ -375,9 +376,16 @@ BOOL setup_end(HWND hwnd)
 BOOL driver_without_setupapi(HWND hwnd)
 {
 	static char mgsbuf[512];
-	sprintf(mgsbuf, "Automatic instalation isn't possible, because it is unsupported on this system. You have to install driver manually!\n\nDriver files are located here: %s", install_path);
-	
-	MessageBoxA(hwnd, mgsbuf, "No automatic driver install", MB_ICONWARNING);
+	if(version_compare(&sysver, &WINVER98) >= 0)
+	{
+		sprintf(mgsbuf, "Driver files are located here: %s", install_path);
+		MessageBoxA(hwnd, mgsbuf, "No automatic driver install", MB_ICONWARNING);
+	}
+	else
+	{
+		sprintf(mgsbuf, "Automatic instalation isn't possible, because it is unsupported on this system. You have to install driver manually!\n\nDriver files are located here: %s", install_path);
+		MessageBoxA(hwnd, mgsbuf, "No automatic driver install", MB_ICONWARNING);
+	}
 	
 	return TRUE;
 }
@@ -464,6 +472,10 @@ BOOL filescopy_result(HWND hwnd)
 
 BOOL install_wine = FALSE;
 BOOL install_glide = FALSE;
+BOOL install_res_qxga = FALSE;
+BOOL install_res_1440 = FALSE;
+BOOL install_res_4k = FALSE;
+BOOL install_res_5k = FALSE;
 
 BOOL setLineSvga(char *buf, size_t bufs)
 {
@@ -501,15 +513,44 @@ BOOL setLineVbox(char *buf, size_t bufs)
 	return TRUE;
 }
 
+BOOL setLineQemu(char *buf, size_t bufs)
+{
+	(void)bufs;
+	
+	strcpy(buf, "CopyFiles=Qemu.Copy");
+	if(install_wine)
+	{
+		strcat(buf, ",Dx.Copy,DX.CopyBackup");
+	}
+	
+	if(install_glide)
+	{
+		strcat(buf, ",Voodoo.Copy");
+	}
+	
+	return TRUE;
+}
+
 BOOL setLineSvgaReg(char *buf, size_t bufs)
 {
 	(void)bufs;
 	
 	strcpy(buf, "AddReg=VMSvga.AddReg,VM.AddReg");
+	
 	if(install_wine)
-	{
 		strcat(buf, ",DX.addReg");
-	}
+	
+	if(install_res_qxga)
+		strcat(buf, ",VM.QXGA");
+	
+	if(install_res_1440)
+		strcat(buf, ",VM.WQHD");
+	
+	if(install_res_4k)
+		strcat(buf, ",VM.UHD");
+	
+	if(install_res_5k)
+		strcat(buf, ",VM.R5K");
 	
 	return TRUE;
 }
@@ -520,18 +561,53 @@ BOOL setLineVboxReg(char *buf, size_t bufs)
 	
 	strcpy(buf, "AddReg=VBox.AddReg,VM.AddReg");
 	if(install_wine)
-	{
 		strcat(buf, ",DX.addReg");
-	}
+	
+	if(install_res_qxga)
+		strcat(buf, ",VM.QXGA");
+	
+	if(install_res_1440)
+		strcat(buf, ",VM.WQHD");
+	
+	if(install_res_4k)
+		strcat(buf, ",VM.UHD");
+	
+	if(install_res_5k)
+		strcat(buf, ",VM.R5K");
+	
+	return TRUE;
+}
+
+BOOL setLineQemuReg(char *buf, size_t bufs)
+{
+	(void)bufs;
+	
+	strcpy(buf, "AddReg=Qemu.AddReg,VM.AddReg");
+	if(install_wine)
+		strcat(buf, ",DX.addReg");
+	
+	if(install_res_qxga)
+		strcat(buf, ",VM.QXGA");
+	
+	if(install_res_1440)
+		strcat(buf, ",VM.WQHD");
+	
+	if(install_res_4k)
+		strcat(buf, ",VM.UHD");
+	
+	if(install_res_5k)
+		strcat(buf, ",VM.R5K");
 	
 	return TRUE;
 }
 
 linerRule_t infFixRules[] = {
-	{"CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy", TRUE, TRUE, setLineVbox},
+	{"CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",   TRUE, TRUE, setLineVbox},
 	{"CopyFiles=VMSvga.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy", TRUE, TRUE, setLineSvga},
-	{"AddReg=VBox.AddReg,VM.AddReg,DX.addReg", TRUE, TRUE, setLineVboxReg},
-	{"AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg", TRUE, TRUE, setLineSvgaReg},
+	{"CopyFiles=Qemu.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",   TRUE, TRUE, setLineQemu},
+	{"AddReg=VBox.AddReg,VM.AddReg,DX.addReg",                  TRUE, TRUE, setLineVboxReg},
+	{"AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg",                TRUE, TRUE, setLineSvgaReg},
+	{"AddReg=Qemu.AddReg,VM.AddReg,DX.addReg",                  TRUE, TRUE, setLineQemuReg},
 	{NULL, FALSE, FALSE, NULL}
 };
 
@@ -581,6 +657,7 @@ BOOL simd95(HWND hwnd)
 			liner("C:\\autoexec.bak", "C:\\autoexec.bat", simd95rules);
 		}
 		
+		addLine("C:\\autoexec.bat", "REM Added by SOFTGPU = simd95.com = enable SSE/AVX\r\n");
 		addLine("C:\\autoexec.bat", "C:\\simd95.com\r\n");
 	}
 	

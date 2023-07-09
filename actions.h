@@ -70,6 +70,10 @@ BOOL filescopy_result(HWND hwnd);
 
 extern BOOL install_wine;
 extern BOOL install_glide;
+extern BOOL install_res_qxga;
+extern BOOL install_res_1440;
+extern BOOL install_res_4k;
+extern BOOL install_res_5k;
 
 BOOL simd95(HWND hwnd);
 BOOL infFixer(HWND hwnd);

@@ -1,3 +1,13 @@
+0.4.2023.13
+! QEMU display driver works
+- Mesa 21.3.8
+- VMware 3D support (see README)
+- optimalizations in VMware SVGA driver
+- frame buffer fixes (fewer black screens when switching color depth)
+- fixed memory allocator
+- SIMD95 is disabled by default
+- Optional resolution above FullHD sets
+
 0.4.2023.11
 ! R5G6B5 surface workaround - fixed black screen on (mostly) NVIDIA GPUs
 - large Wine (DirectX) update

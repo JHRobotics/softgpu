@@ -1,3 +1,8 @@
+0.4.2023.14
+! fixed race condition in FIFO access: causes freezing (introduced in 0.4.2023.13)
+! fixed race condition in when is calling blit function: causes BSOD (introduced in 0.4.2023.13)
+! fixed not well working screen memory zeroing: randomly rewrites driver memory (introduced in 0.4.2023.4)
+
 0.4.2023.13
 ! QEMU display driver works
 - Mesa 21.3.8

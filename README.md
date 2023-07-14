@@ -91,7 +91,7 @@ SoftGPU with HW acceleration was tested only with lasted version of VMware Works
 ### General information
 - Use **Windows 98 SE**, newer Mesa is not currently working in 95 and Windows 98 FE (first edition) hasn't supporting WDM sound cards so you might have a problem with sound.
 - **Fresh install**, Windows 9x doesn't like hardware changes and if you import import VM from somewhere, strange problems may occur.
-- **no VMware additions**, because they only contain basic display driver, mouse integration driver and tray program which immediately replaces display driver with VMware one. If you want mouse integration driver (but is useless for gaming with mouse) alone driver is listed below.
+- **no VMware additions**, ~because they only contain basic display driver,~ contain mouse integration driver and tray program which **is replacing display driver to VMware default display driver** [and some integration utilities](https://github.com/JHRobotics/softgpu/issues/14).  If you want mouse integration driver (but is useless for gaming with mouse) alone driver is listed below.
 - set as hardware compatibility **Workstation 9.x** and VM type **Windows 2000 Server**. VMware in other cases is comparing installed addition tools version and features with hypervisor version and if they don't match refuses to expose SVGA 3D commands to guest.
 
 ### Step by step guide
@@ -230,10 +230,28 @@ You can turn it on in Device Manager on HDD properties enable `DMA` checkbox. Do
 
 
 ### Change logon to Windows Logon
-
 After install network card you are asked every time to enter the credentials - but this is not credentials to the computer but to the network (you can also skip this by press `ESC`). If you don't plan to install NT server as other VM and runs ancient network sharing, this is only annoying thing. You can turn it off in *Control panel* -> *Network* and change *Primary network logon* to **Windows Logon**.
 
 ![Windows logon switch](resource/docs/windows-logon.png)
+
+## Extra drivers
+These are links to some extra drivers for VM:
+- [AC97 (version 3.62)](https://files.emulace.cz/ac97_362.zip) - for QEMU and VirtualBox
+- [SB PCI 128](https://files.emulace.cz/sbpci_98se.exe) - for VMware Workstation
+- [VMware mouse driver](https://files.emulace.cz/vmmouse.zip) ([floppy version](https://files.emulace.cz/vmmouse.ima))
+
+If you wish download these drivers from Windows 9x directly, you can use these links (simply replace https -> http):
+```
+http://files.emulace.cz/ac97_362.zip
+http://files.emulace.cz/sbpci_98se.exe
+http://files.emulace.cz/vmmouse.zip
+```
+
+If you need tool for decompressing ZIP and other archives, there is 7-Zip in version with Windows 98 compatible:
+```
+http://files.emulace.cz/7z920.exe
+```
+
 
 
 ## Compilation from source
@@ -292,8 +310,13 @@ CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy
 ```
 and
 ```
-CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy
+CopyFiles=VMSvga.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy
 ```
+and
+```
+CopyFiles=Qemu.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy
+```
+
 15) place redistributable to redist folder
 16) Edit `softgpu.ini` for final paths review
 17) Create ISO file place to it:

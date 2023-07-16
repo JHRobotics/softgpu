@@ -53,11 +53,11 @@ ISO image or ZIP package can be downloaded on release page: https://github.com/J
 - In **General** change *type* to **Linux** and *version* to **Other Linux (32-bit)** => This setting haven't any effect to hardware configuration but allow you to set GPU type through GUI.
 - Now in *Display*
   - Set *Graphic Controller* to **VMSVGA**
-  - set video memory to **128 MB** (VBox sometimes turn off GPU HW acceleration if this value is lower)
+  - set video memory to ~**128 MB**~ **64 MB** (VBox sometimes turn off GPU HW acceleration if this value is lower), currently for compatibility setting is 64 MB or less recommended. More on [this issue](https://github.com/JHRobotics/vmdisp9x/issues/2) and more about [VRAM usability](https://github.com/JHRobotics/vmdisp9x#vram-size).
   - Check **enable 3D Acceleration**
 7) Optional adjustment
 - set USB controller to USB 1.1 (OHCI) for 98/Me, or turn USB off for 95
-- Audio controller set to **SoundBlaster 16** for 95/98 or **AC 97** for Me
+- Audio controller set to **SoundBlaster 16** for 95 ~and 98~ or **AC 97** for 98 and Me (working drivers for Windows 98 are [below](#extra-drivers).
 8) Disable VMSVGA10
 - Open command line
 - (on Windows) navigate to VirtualBox installation directory (default: *C:\Program Files\Oracle\VirtualBox*)
@@ -91,7 +91,7 @@ SoftGPU with HW acceleration was tested only with lasted version of VMware Works
 ### General information
 - Use **Windows 98 SE**, newer Mesa is not currently working in 95 and Windows 98 FE (first edition) hasn't supporting WDM sound cards so you might have a problem with sound.
 - **Fresh install**, Windows 9x doesn't like hardware changes and if you import import VM from somewhere, strange problems may occur.
-- **no VMware additions**, ~because they only contain basic display driver,~ contain mouse integration driver and tray program which **is replacing display driver to VMware default display driver** [and some integration utilities](https://github.com/JHRobotics/softgpu/issues/14).  If you want mouse integration driver (but is useless for gaming with mouse) alone driver is listed below.
+- **no VMware additions**, ~because they only contain basic display driver,~ contain mouse integration driver and tray program which **is replacing display driver to VMware default display driver** [and some integration utilities](https://github.com/JHRobotics/softgpu/issues/14).  If you want mouse integration driver (but is useless for gaming with mouse) alone driver is [listed below](#extra-drivers).
 - set as hardware compatibility **Workstation 9.x** and VM type **Windows 2000 Server**. VMware in other cases is comparing installed addition tools version and features with hypervisor version and if they don't match refuses to expose SVGA 3D commands to guest.
 
 ### Step by step guide

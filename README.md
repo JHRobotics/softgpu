@@ -58,7 +58,7 @@ ISO image or ZIP package can be downloaded on release page: https://github.com/J
 7) Optional adjustment
 - set USB controller to USB 1.1 (OHCI) for 98/Me, or turn USB off for 95
 - Audio controller set to **SoundBlaster 16** for 95 ~and 98~ or **AC 97** for 98 and Me (working drivers for Windows 98 are [below](#extra-drivers).
-8) Disable VMSVGA10
+8) Disable VMSVGA10 **(VirtualBox >= 7.0 only)**
 - Open command line
 - (on Windows) navigate to VirtualBox installation directory (default: *C:\Program Files\Oracle\VirtualBox*)
 - Enter this command where *My Windows 98* is your Virtual Machine name

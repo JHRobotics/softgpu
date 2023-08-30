@@ -850,9 +850,9 @@ LRESULT CALLBACK softgpuLoadingProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	{
 		case WM_CREATE:
 		{
-			CreateWindowA("STATIC", "Inspecting system,\nplease, stand by!",
+			CreateWindowA("STATIC", "Inspecting system...\n\nPlease stand by!",
 				WS_VISIBLE | WS_CHILD | SS_CENTER,
-				DPIX(0), DPIY(80), DPIX(400), DPIY(LINE_HEIGHT*2),
+				DPIX(0), DPIY(80), DPIX(400), DPIY(LINE_HEIGHT*3),
 				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
 			break;
 		}
@@ -925,7 +925,7 @@ int main(int argc, const char *argv[])
 	wc_loading.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
 	wc_loading.hCursor       = LoadCursor(0, IDC_WAIT);
 	wc_loading.hIcon         = LoadIconA(hInst, MAKEINTRESOURCE(SOFTGPU_ICON1));
-	
+	wc_loading.hInstance     = hInst;
 	RegisterClass(&wc_loading);
 	
 	DWORD threadId;
@@ -940,13 +940,19 @@ int main(int argc, const char *argv[])
   }
   
   softgpu_sysinfo();
-
-	/* destroy loading window */
-	PostThreadMessage(threadId, WM_DESTROY, 0, 0);
-	
-	/* wait loading win thread to close... */
-	WaitForSingleObject(win_loading_th, INFINITE);
-	CloseHandle(win_loading_th);
+  
+  if(win_loading_th != INVALID_HANDLE_VALUE)
+  {
+		/* destroy loading window */
+		PostThreadMessage(threadId, WM_DESTROY, 0, 0);
+		
+		/* wait loading win thread to close... */
+		if(WaitForSingleObject(win_loading_th, 1000) == WAIT_TIMEOUT)
+		{
+			TerminateThread(win_loading_th, 0);
+		}
+		CloseHandle(win_loading_th);
+	}
 
 	// Register the window class.
 	WNDCLASS wc;
@@ -958,6 +964,7 @@ int main(int argc, const char *argv[])
 	wc.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
 	wc.hCursor       = LoadCursor(0, IDC_ARROW);
 	wc.hIcon         = LoadIconA(hInst, MAKEINTRESOURCE(SOFTGPU_ICON1));
+	wc_loading.hInstance     = hInst;
 
 	RegisterClass(&wc);
 	

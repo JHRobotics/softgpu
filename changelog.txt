@@ -1,3 +1,16 @@
+0.4.2023.18
+! fixed some stability issues in CRT (malloc, strndup, ...)
+! More stability on non-SSE guests (introduced in 0.4.2023.13)
+- Virtual GPU gen. 10 supported!
+- Mesa: 23.1.6
+- Mesa: faster rendering
+- glchecker: fixed startup crash
+- glchecker: fixed missing textures on OpenGL 2.x
+- Wine: some stability issues
+- Wine: support for GPU gen 10
+- Driver: SVGA - HW cursor is supported and enabled (32 bpp only)
+- Driver: QEMU - stability (open DOS window, shutdown problem on KVM/WHPX)
+
 0.4.2023.14
 ! fixed race condition in FIFO access: causes freezing (introduced in 0.4.2023.13)
 ! fixed race condition in when is calling blit function: causes BSOD (introduced in 0.4.2023.13)

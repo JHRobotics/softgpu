@@ -26,9 +26,37 @@ This is ready-to-use compilation of my 4 projects:
 | Oracle VirtualBox  | 6.1, 7.0   | VboxVGA  |     ✔      |   ✔   |   ✔   |   ✔   |   ❌    | SB16, AC97        |
 | Oracle VirtualBox  | 6.1, 7.0   | VboxSVGA |     ✔      |   ✔   |   ✔   |   ✔   |   ✔    | SB16, AC97        |
 | Oracle VirtualBox  | 6.1, 7.0   |  VMSVGA  |     ✔      |   ✔   |   ✔   |   ✔   |   ✔    | SB16, AC97        |
-| VMware Workstation | 17         |    -     |     ✔      |   ✔   |   ✔   |   ⚠   |   ✔    | SBPCI128          |
+| VMware Workstation | 16, 17     |    -     |     ✔      |   ✔   |   ✔   |   ⚠   |   ✔    | SBPCI128          |
 | QEMU               | 7.x, 8.0   |   std    |     ✔      |   ✔   |   ✔   |   ✔   |   ❌    | adlib, SB16, AC97 |
 | QEMU               | 7.x, 8.0   |  vmware  |     ✔      |   ✔   |   ❌   |   ❌   |   ❌    | adlib, SB16, AC97 |
+
+
+SoftGPU can use 3 render drivers:
+- *softpipe*: software Mesa3D reference renderer
+- *llvmlipe*: software LLVM accelerated 3D renderer
+- *SVGA3D*: HW renderer for virtual GPU adapter VMWare SVGA-II (sometimes called VMSVGA, VboxSVGA or SVGA-III)
+
+Not all renderers supporting all application/games, performance expectation is in 1024x768 32bit:
+
+
+| Renderer            | Requirements   | OpenGL version | DX9  | DX9 shaders | DX8  | DX8 shaders | DX6-7 | OpenGL | Glide | Glide DOS | Expected FPS |
+| :------------------ | :------------: | :------------: | :--: | :---------: | :--: | :---------: | :---: | :----: | :---: | :-------: | :----------: |
+| softpipe            |      -         |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔   |    ❌     |    1-3       |
+| llvmlipe (128 bits) |     SSE        |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔   |    ❌     |    10-15     |
+| llvmlipe (256 bits) |   SSE, AVX     |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔   |    ❌     |    12-20     |
+| SVGA3D              | SVGA-II (gen9) |     2.1        |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |  ✔   |    ❌     |    30-60     |
+| SVGA3D              | SVGA-II (gen10)|     4.1        |  ✔  |      ✔     |  ⚠  |      ✔     |  ❌   |   ❌   |  ❌   |    ❌     |    35-80     |
+
+
+Hypervisor translation to real HW GPU:
+
+
+| Renderer        | Host technology | Hypervisor support |
+| :-------        | :-------------: | :----------------: |
+| softpipe        |   framebuffer   | all                |
+| llvmlipe        |   framebuffer   | all                |
+| SVGA3D (gen 9)  | DX9/OpenGL 2.1  | VirtualBox 6+7, VMware Workstation |
+| SVGA3D (gen 10) | DX11/Vulkan     | VirtualBox 7       |
 
 
 ## Download
@@ -43,22 +71,30 @@ ISO image or ZIP package can be downloaded on release page: https://github.com/J
 5) [only if you have AC97 sound card] Reinstall DirectX again = AC97 replacing some DX files, but they are not working with newer DX versions
 6) Have fun!
 
+## SoftGPU in action
+- [3DMark03](https://youtu.be/XB7GYypyA18)
+- [3DMark2001](https://youtu.be/DyrnMKvaaj8)
+- [3DMark2000](https://youtu.be/8OwfFozcICo)
+- [3DMark99](https://youtu.be/jVp0jleQX_8)
+
+For comparison, [video from real end-of-era PC is here](https://youtu.be/JqHw-Oh3TfY). So, some work still needs to be done :-)
+
 ## VirtualBox VM setup with HW acceleration
 1) Create new VM selecting *Machine -> New* in menu
 2) Type: Microsoft Windows, Version: Windows 98
-3) Base memory: 512 MB (256 MB is minimum, but more 512 MB isn't recommended without additional patches!), CPU: 1
+3) Base memory: **512 MB** (256 MB is minimum, but more 512 MB isn't recommended without additional patches!), CPU: 1
 4) Disk size: recommended is at least 20 GB for 98/Me (you can select less, but HDD becomes full faster). Select 2 GB if you plan install Windows 95. Tip: If you storing virtual machine on classic HDD, check *Pre-allocate Full Size*, because it leads to lower disk image fragmentation.
 5) Finish wizard
 6) Open VM setting
 - In **General** change *type* to **Linux** and *version* to **Other Linux (32-bit)** => This setting haven't any effect to hardware configuration but allow you to set GPU type through GUI.
 - Now in *Display*
   - Set *Graphic Controller* to **VMSVGA**
-  - set video memory to ~**128 MB**~ **64 MB** (VBox sometimes turn off GPU HW acceleration if this value is lower), currently for compatibility setting is 64 MB or less recommended. More on [this issue](https://github.com/JHRobotics/vmdisp9x/issues/2) and more about [VRAM usability](https://github.com/JHRobotics/vmdisp9x#vram-size).
+  - set video memory to **128 MB** (VBox sometimes turn off GPU HW acceleration if this value is lower). More on [this issue](https://github.com/JHRobotics/vmdisp9x/issues/2) and more about [VRAM usability](https://github.com/JHRobotics/vmdisp9x#vram-size).
   - Check **enable 3D Acceleration**
 7) Optional adjustment
 - set USB controller to USB 1.1 (OHCI) for 98/Me, or turn USB off for 95
 - Audio controller set to **SoundBlaster 16** for 95 ~and 98~ or **AC 97** for 98 and Me (working drivers for Windows 98 are [below](#extra-drivers).
-8) Disable VMSVGA10 **(VirtualBox >= 7.0 only)**
+8) Disable VMSVGA10 **(VirtualBox >= 7.0 only!)**
 - Open command line
 - (on Windows) navigate to VirtualBox installation directory (default: *C:\Program Files\Oracle\VirtualBox*)
 - Enter this command where *My Windows 98* is your Virtual Machine name
@@ -75,15 +111,28 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVG
 - to 16 bits for 95, because 95 can't set colour depth on runtime (reboot is required) and lots of old applications can't start in 32 bits (all Glide for example)
 15) Verify settings:
 - OpenGL: run `glchecker.exe` in `tools` on SoftGPU CD
-  - If renderer is **SVGA3D**, you have HW acceleration, congratulation!
-  - If renderer is **llvmpipe**, you have still SW acceleration, but at least accelerated by SSE (128 bits) or AVX (256 bit)
+  - If renderer is **SVGA3D**, you have HW acceleration, congratulation! If you OpenGL version is **2.1**, you done all right. If OpenGL version is **4.1** you have GPU gen 10 active, it isn't wrong, but you may see graphical glitches in lots of games = navigate back to *8.* to turn it off.
+  - If renderer is **llvmpipe**, you have still SW acceleration, but at least accelerated by SSE (128 bits) or AVX (256 bit). GPU acceleration is disabled or you real GPU isn't sporting HW acceleration.
   - If renderer is **softpipe**, you have SW acceleration and running on reference (but slow) renderer, SIMD ins't accesable somehow, or you on 95, where is softpipe renderer by default, even if SIMD hack is installed (more in Mesa9x documentation: https://github.com/JHRobotics/mesa9x).
-  - If program crash on loading screen, you are on MS software OpenGL renderer (run **wgltest.exe** and check value `GL_RENDERER`). If driver is correctly installed this indicates problem with loading `mesa3d.dll`, usually MSVCR missing, or you install SSE instrumented driver or Windows 95 without SIMD95.
+  - If renderer is **Generic**, then ICD OpenGL DLL is not loaded. Something is wrong with system or you installed SSE instrumented binaries on no SSE enabled/supported guest.
   - If program can't start by missing `MSVCRT.DLL` install MSVCRT (part of Internet Explorer >= 4 too)
 - DirectX:
   - On 98 you can run **dxdiag** (Start -> Run -> type `dxdiag`) and check all tests
   - On Me you can still run **dxdiag**, but you can only check DX8 and DX9, because we cannot easily replace system `DDRAW.DLL`. But DX6 and DX7 games should usually run without problems
   - On 95 you can still run **dxdiag**, but if you run test, you only see black screens, but again, games (if supporting 95) games should usually run
+
+### AMD Zen, 11th Generation Intel Core and newer
+Newer CPU have excellent performance but needs some extra tune:
+1) apply [patcher9x](https://github.com/JHRobotics/patcher9x) - this is required!
+2) Change TSC (Time Stamp Counter) behaviour
+```
+VBoxManage setextradata "My Windows 98" "VBoxInternal/TM/TSCTiedToExecution" 1
+```
+3) (AMD ZEN 2+ only) Change too complex CPUID to something simpler (Windows itself is OK, but some programs may be confused - 3DMark for example)
+```
+VBoxManage modifyvm "My Windows 98" --cpu-profile "AMD Ryzen 7 1800X Eight-Core"
+```
+
 
 ## WMware Workstation setup with HW acceleration
 SoftGPU with HW acceleration was tested only with lasted version of VMware Workstation (17.0.0 build-20800274), if you'll be successful with older version or free VMware player, please let me know.
@@ -180,11 +229,26 @@ warning message and reboot computer.
 
 8) After reboot (again), you have working system now and you can install SoftGPU and other drivers.
 
+## Virtual GPU gen. 10
+VirtualBox 7.0 is supporting newer technology for rendering. It is supporting pixel/vertex/computing shaders but it is still incomplete. You can turn in by this command.
+```
+VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVGA10" "1"
+```
+
+On most configurations this is turn on by default (allows for example Windows 7-11 desktop composition aka "aero") but for legacy technologies isn't ready yet - you can probably see some serious graphical glitches if you use it with pre DirectX 9 application/games. But if you want run 3DMark03 or 2001 you'll have to turn this on. If you application or game work with this configuration, it usually runs smoother than with GPU gen. 9.
+
 ## Bugs
 Currently there are known these limitations:
 
 ### Vertex Shaders
-Vertex shaders not working correctly with HW acceleration. You can see it, for example, with 3D Mark 2001/2003 tests. Using shaders is very rare in DirectX 8 games, but very common in DirectX 9 games (on other hand, these are usually games after Windows 9x era). As temporary solution you can turn off HW acceleration (but rendering will be much slower).
+Vertex shaders not working correctly with HW acceleration. You can see it, for example, with 3D Mark 2001/2003 tests. Using shaders is very rare in DirectX 8 games, but very common in DirectX 9 games (on other hand, these are usually games after Windows 9x era). As temporary solution you can turn off HW acceleration (but rendering will be much slower). Some games also has failback technology if GPU hasn't shader support (for example GTA SA). You can globally disable Vertex Shaders inserting this to registry:
+
+```
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\Software\Wine\global]
+"MaxShaderModelVS"=dword:00000000
+```
 
 ### Windows 95 support
 Windows 95 support is limited - SoftGPU works, but there lots of extra bugs will appear and if you haven't any special reasons for using Windows 95 use recommended Windows 98 Second edition instead.
@@ -227,7 +291,6 @@ Windows by default using interrupts to access HDD and CD drive. This is especial
 You can turn it on in Device Manager on HDD properties enable `DMA` checkbox. Do it the same for CD driver and reboot VM for applying changes.
 
 ![setting DMA access to HDD](resource/docs/dma.png)
-
 
 ### Change logon to Windows Logon
 After install network card you are asked every time to enter the credentials - but this is not credentials to the computer but to the network (you can also skip this by press `ESC`). If you don't plan to install NT server as other VM and runs ancient network sharing, this is only annoying thing. You can turn it off in *Control panel* -> *Network* and change *Primary network logon* to **Windows Logon**.

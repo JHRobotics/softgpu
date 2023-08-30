@@ -66,7 +66,7 @@ void about(HWND hwnd)
 		"Components\n"
 		"VMDisp9x: %s\n"
 		"Mesa9x: %s\n"
-		"Mesa9x (SSE): %s\n"
+		/*"Mesa9x (SSE): %s\n"*/
 		"Wine9x: %s\n"
 		"OpenGlide9x: %s\n"
 		"SIMD95: %s\n\n"
@@ -74,7 +74,7 @@ void about(HWND hwnd)
 		SOFTGPU_VERSION_STR,
 		iniValue("[version]", "vmdisp9x"),
 		iniValue("[version]", "mesa9x"),
-		iniValue("[version]", "mesa9x_sse"),
+		/*iniValue("[version]", "mesa9x_sse"),*/
 		iniValue("[version]", "wine9x"),
 		iniValue("[version]", "openglide9x"),
 		iniValue("[version]", "simd95")
@@ -84,6 +84,7 @@ void about(HWND hwnd)
 }
 
 #define WND_SOFTGPU_CLASS_NAME "SoftGPUCLS"
+#define WND_SOFTGPU_LOAD_CLASS_NAME "SoftGPULDCLS"
 
 #define CHBX_MSCRT  1
 #define CHBX_DX     2
@@ -656,9 +657,16 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 					hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
 			}
 			
+#ifdef EXTRA_INFO
+			CreateWindowA("STATIC", EXTRA_INFO,
+				WS_VISIBLE | WS_CHILD | SS_RIGHT | WS_DISABLED,
+				DPIX(DRAW_START_X+LINE_WIDTH+10), DPIY(DRAW_START_Y-5 + 0*LINE_HEIGHT), DPIX(200), DPIY(LINE_HEIGHT),
+				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
+#endif
+			
 			CreateWindowA("STATIC", sysinfomsg,
 				WS_VISIBLE | WS_CHILD | SS_LEFT | WS_BORDER,
-				DPIX(DRAW_START_X+LINE_WIDTH+10), DPIY(DRAW_START_Y + 0*LINE_HEIGHT), DPIX(200), DPIY(9*LINE_HEIGHT),
+				DPIX(DRAW_START_X+LINE_WIDTH+10), DPIY(DRAW_START_Y + 1*LINE_HEIGHT), DPIX(200), DPIY(8*LINE_HEIGHT),
 				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
 
 			CreateWindowA("BUTTON", "About",
@@ -834,6 +842,54 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
   return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
+/* Enumerating PCI buse take some time, so we show loading window */
+
+LRESULT CALLBACK softgpuLoadingProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	switch(msg)
+	{
+		case WM_CREATE:
+		{
+			CreateWindowA("STATIC", "Inspecting system,\nplease, stand by!",
+				WS_VISIBLE | WS_CHILD | SS_CENTER,
+				DPIX(0), DPIY(80), DPIX(400), DPIY(LINE_HEIGHT*2),
+				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
+			break;
+		}
+		case WM_DESTROY:
+		{
+			break;
+		}
+	}	
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+DWORD WINAPI softgpuLoadingThread(LPVOID lpParameter)
+{
+	MSG msg;
+	(void)lpParameter;
+	
+	HWND win_loading = CreateWindowA(WND_SOFTGPU_LOAD_CLASS_NAME, "SoftGPU setup", WS_TILED|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(400), DPIY(250), 0, 0, NULL, 0);
+	
+	while(GetMessage(&msg, NULL, 0, 0))
+  {
+  	if (IsDialogMessage(win_loading, &msg))
+  	{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		
+		if(msg.message == WM_DESTROY)
+		{
+			break;
+		}
+  }
+  
+  DestroyWindow(win_loading);
+  
+  return 0;
+}
+
 typedef BOOL (WINAPI * SetProcessDPIAware_f)();
 
 void setHightDPI()
@@ -855,10 +911,26 @@ int main(int argc, const char *argv[])
 {
 	MSG msg; 
 	HINSTANCE hInst = GetModuleHandle(NULL);
+  setHightDPI();
 	
 	(void)argc;
 	(void)argv;
 	
+	WNDCLASS wc_loading;
+	memset(&wc_loading, 0, sizeof(wc_loading));
+	
+	wc_loading.style         = CS_HREDRAW | CS_VREDRAW;
+	wc_loading.lpfnWndProc   = softgpuLoadingProc;
+	wc_loading.lpszClassName = WND_SOFTGPU_LOAD_CLASS_NAME;
+	wc_loading.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
+	wc_loading.hCursor       = LoadCursor(0, IDC_WAIT);
+	wc_loading.hIcon         = LoadIconA(hInst, MAKEINTRESOURCE(SOFTGPU_ICON1));
+	
+	RegisterClass(&wc_loading);
+	
+	DWORD threadId;
+	HANDLE win_loading_th = CreateThread(NULL, 0, softgpuLoadingThread, NULL, 0, &threadId);
+		
 	registryReadDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup", &settings_data);
 
   hasSETUPAPI = loadSETUAPI();
@@ -869,7 +941,12 @@ int main(int argc, const char *argv[])
   
   softgpu_sysinfo();
 
-  setHightDPI();
+	/* destroy loading window */
+	PostThreadMessage(threadId, WM_DESTROY, 0, 0);
+	
+	/* wait loading win thread to close... */
+	WaitForSingleObject(win_loading_th, INFINITE);
+	CloseHandle(win_loading_th);
 
 	// Register the window class.
 	WNDCLASS wc;

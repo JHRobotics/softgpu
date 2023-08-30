@@ -10,6 +10,10 @@ LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lsetupapi -lkernel32 -lshell32 -Wl,
 
 SOFTGPU_PATCH=2023
 
+ifdef EXTRA_INFO
+CFLAGS += -DEXTRA_INFO="\"$(EXTRA_INFO)\""
+endif
+
 NULLOUT=$(if $(filter $(OS),Windows_NT),NUL,/dev/null)
 
 GIT      ?= git

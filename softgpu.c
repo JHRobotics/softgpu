@@ -819,6 +819,15 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 				case BTN_BROWSE:
 					softgpu_browse(hwnd);
 					break;
+				case CHBX_SIMD95:
+					if(IsDlgButtonChecked(hwnd, CHBX_SIMD95))
+					{
+						if(MessageBoxA(hwnd, "SIMD95 works well only in VirtualBox,\nin other cases, the system probably won't boot!\n\nAre you sure you want to this option set?", "WARNING!", MB_ICONWARNING|MB_YESNO) == IDNO)
+						{
+							CheckDlgButton(hwnd, CHBX_SIMD95, BST_UNCHECKED);
+						}
+					}
+					break;
 			} // switch(wParam)
 			break;
 		}
@@ -997,7 +1006,7 @@ int main(int argc, const char *argv[])
 			{
 				if(drvPCstatus & CHECK_DRV_NOPCI)
 				{
-					MessageBoxA(win, "No working PCI bus found! Without PCI bus installer and driver can't work!\n\nIf you're seeing this on QEMU, check REAME to solve this problem:\nhttps://github.com/JHRobotics/softgpu#qemu", "No PCI bus", MB_OK | MB_ICONHAND);
+					MessageBoxA(win, "No working PCI bus found! Without PCI bus installer and driver can't work!\n\nIf you're seeing this on QEMU, check README to solve this problem:\nhttps://github.com/JHRobotics/softgpu#qemu", "No PCI bus", MB_OK | MB_ICONHAND);
 				}
 				else if(drvPCstatus & CHECK_DRV_LEGACY_VGA)
 				{

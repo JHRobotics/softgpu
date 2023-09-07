@@ -1,0 +1,4 @@
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\Software\Wine\global]
+"MaxShaderModelVS"=dword:00000000

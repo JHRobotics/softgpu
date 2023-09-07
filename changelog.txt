@@ -1,3 +1,12 @@
+0.4.2023.19
+! fixed GPUs without CB (VBox <= 6.1)
+! fixed GMR allocation pool (introduced in 0.4.2023.13)
+! enabled direct rendering (introduced in 0.4.2023.18)
+! fixed direct rendering in window mode
+- optimized locks
+- driver configuration in registry
+- specific tune for VirtualBox/VMware
+
 0.4.2023.18
 ! fixed some stability issues in CRT (malloc, strndup, ...)
 ! More stability on non-SSE guests (introduced in 0.4.2023.13)

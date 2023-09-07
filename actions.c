@@ -318,6 +318,7 @@ BOOL proc_wait(HWND hwnd)
 extern version_t sysver;
 extern version_t WINVER98SE;
 extern version_t WINVER98;
+extern version_t WINVERME;
 
 void install_infobox(HWND hwnd, const char *name)
 {
@@ -537,8 +538,11 @@ BOOL setLineSvgaReg(char *buf, size_t bufs)
 	
 	strcpy(buf, "AddReg=VMSvga.AddReg,VM.AddReg");
 	
-	if(install_wine)
+	if(install_wine && version_compare(&sysver, &WINVERME) >= 0)
+	{
+		/* these entries is only relevant to system, that cannot replace ddraw.dll */
 		strcat(buf, ",DX.addReg");
+	}
 	
 	if(install_res_qxga)
 		strcat(buf, ",VM.QXGA");

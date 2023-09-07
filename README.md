@@ -124,7 +124,7 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVG
 ### AMD Zen, 11th Generation Intel Core and newer
 Newer CPU have excellent performance but needs some extra tune:
 1) apply [patcher9x](https://github.com/JHRobotics/patcher9x) - this is required!
-2) Change TSC (Time Stamp Counter) behaviour
+2) Change TSC (Time Stamp Counter) behaviour (Warning: this options is not available when VirtualBox is using Hyper-V as execution, engine!)
 ```
 VBoxManage setextradata "My Windows 98" "VBoxInternal/TM/TSCTiedToExecution" 1
 ```

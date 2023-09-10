@@ -62,7 +62,7 @@ Hypervisor translation to real HW GPU:
 ## Download
 ISO image or ZIP package can be downloaded on release page: https://github.com/JHRobotics/softgpu/releases/
 
-## Installation:
+## Installation
 0) Setup the Virtual Machine
 1) Copy installation files on formatted HDD and apply **patcher9x** [Optional but recommended]
 2) Install the Windows 95/98/Me [Windows 98 SE is recommended]
@@ -71,8 +71,23 @@ ISO image or ZIP package can be downloaded on release page: https://github.com/J
 5) [only if you have AC97 sound card] Reinstall DirectX again = AC97 replacing some DX files, but they are not working with newer DX versions
 6) Have fun!
 
+## Update
+If you have an older version of SoftGPU installed, you can update without any problem: insert the CD with the latest version into the VM and click install. The installer will take care of all the necessary modifications, only to increase compatibility it is necessary to do some steps manually:
+
+**Update to version v0.4.2023.19**
+- Only applies to 95/98 not Me
+- Fixes occasional problem with DirectDraw detection (3DMark99)
+- Find the following key in the registry:
+```
+HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\SessionManager\KnownDLLs
+```
+- And remove the value named `DDRAW` (with data `ddrawme.dll`)
+- Don't do these steps in **Windows Me**, in Me is still this registry key necessary to make DDraw and DX 7 and lower to work!
+
+
 ## SoftGPU in action
-- [3DMark03](https://youtu.be/XB7GYypyA18)
+- [3DMark03](https://youtu.be/eHmzTE07VOc) in version v0.4.2023.19
+- [3DMark03](https://youtu.be/XB7GYypyA18) in version v0.4.2023.18
 - [3DMark2001](https://youtu.be/DyrnMKvaaj8)
 - [3DMark2000](https://youtu.be/8OwfFozcICo)
 - [3DMark99](https://youtu.be/jVp0jleQX_8)

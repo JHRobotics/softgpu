@@ -149,7 +149,7 @@ VBoxManage modifyvm "My Windows 98" --cpu-profile "AMD Ryzen 7 1800X Eight-Core"
 ```
 
 
-## WMware Workstation setup with HW acceleration
+## VMware Workstation setup with HW acceleration
 SoftGPU with HW acceleration was tested only with lasted version of VMware Workstation (17.0.0 build-20800274), if you'll be successful with older version or free VMware player, please let me know.
 
 ### General information
@@ -372,7 +372,7 @@ ddreplacer path/to/extracted/ddraw.dll ddr95.dll
    - copy `ddr95.dll` => `driver/win98me/dx/ddr95.dll`
 11) Extract original ddraw.dll from newer DX9 redistributable (doesn't matter if it's final one, this file doesn't seem to change often) and type
 ```
-ddreplacer path/to/extracted/ddraw.dll ddr95.dll
+ddreplacer path/to/extracted/ddraw.dll ddr98.dll
 ```
    - copy `ddr98.dll` => `driver/win95/dx/ddr98.dll`
    - copy `ddr98.dll` => `driver/win98me/dx/ddr98.dll`

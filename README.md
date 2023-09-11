@@ -206,6 +206,26 @@ SoftGPU with HW acceleration was tested only with lasted version of VMware Works
 
 11) Use `glchecker.exe` to verify settings
 
+
+## VMware Workstation Player
+VMware Workstation Player hasn't GUI option to select virtual machine version. But you can set it manually by editing `*.vmx` file:
+
+0) Turn VM off
+1) Open folder with Virtual Machine (How to locate: Right click on VM -> *setting...* -> tab *Options* -> *General* -> *Working directory*)
+2) Open file `*Virtual machine name*.vmx` in text editor (for example in Notepad if you haven't something better)
+3) Search for `virtualHW.version`
+4) Modify line to:
+```
+virtualHW.version = "9"
+```
+(Original values are *18* for VMware 16 or *19* for VMware 17)
+
+5) Save file, start VM and run *glchecker* to verify setting:
+
+![VMware Player + SoftGPU](resource/docs/vmw-player.png)
+
+
+
 ## QEMU
 Hardware 3D support isn't available yet with QEMU. 2D driver now works with QEMU `-vga std` or `-vga vmware`. But main problem with QEMU is bad detection of a PCI bus. If the PCI bus is detected badly, system won't enumerate most of device - VGA adapter, sound and network card and even IDE bus.
 

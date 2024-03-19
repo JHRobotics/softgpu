@@ -2,11 +2,13 @@
 
 ![SoftGPU animated logo](resource/softgpu.webp)
 
-This is ready-to-use compilation of my 4 projects:
+This is ready-to-use compilation of my ~4~ 6 projects:
 - VMDisp9x: https://github.com/JHRobotics/vmdisp9x
 - Mesa3D for 9x: https://github.com/JHRobotics/mesa9x
 - WineD3D for 9x: https://github.com/JHRobotics/wine9x
 - OpenGlide for 9x: https://github.com/JHRobotics/openglide9x
+- VMHAL9x: https://github.com/JHRobotics/vmhal9x
+- ICD enabled fork of qemu-3dfx: https://github.com/JHRobotics/qemu-3dfx
 
 ## Requirements
 1) Virtual machine with one of these VGA adapter support:
@@ -29,23 +31,27 @@ This is ready-to-use compilation of my 4 projects:
 | VMware Workstation | 16, 17     |    -     |     ✔      |   ✔   |   ✔   |   ⚠   |   ✔    | SBPCI128          |
 | QEMU               | 7.x, 8.0   |   std    |     ✔      |   ✔   |   ✔   |   ✔   |   ❌    | adlib, SB16, AC97 |
 | QEMU               | 7.x, 8.0   |  vmware  |     ✔      |   ✔   |   ❌   |   ❌   |   ❌    | adlib, SB16, AC97 |
+| QEMU               | 7.x, 8.0   |   std + qemu-3dfx    |     ✔      |   ✔   |   ✔   |   ✔   |   ✔    | adlib, SB16, AC97 |           
 
-
-SoftGPU can use 3 render drivers:
+SoftGPU can use 4 render drivers:
 - *softpipe*: software Mesa3D reference renderer
 - *llvmlipe*: software LLVM accelerated 3D renderer
 - *SVGA3D*: HW renderer for virtual GPU adapter VMWare SVGA-II (sometimes called VMSVGA, VboxSVGA or SVGA-III)
+- *qemu-3dfx*: [3D passthrough for QEMU by KJ Liew](https://github.com/kjliew/qemu-3dfx), allow bypass OpenGL and GLIDE primitives to hypervisor's GPU. QEMU and fullscreen only.
 
 Not all renderers supporting all application/games, performance expectation is in 1024x768 32bit:
 
 
-| Renderer            | Requirements   | OpenGL version | DX9  | DX9 shaders | DX8  | DX8 shaders | DX6-7 | OpenGL | Glide | Glide DOS | Expected FPS |
-| :------------------ | :------------: | :------------: | :--: | :---------: | :--: | :---------: | :---: | :----: | :---: | :-------: | :----------: |
-| softpipe            |      -         |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔   |    ❌     |    1-3       |
-| llvmlipe (128 bits) |     SSE        |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔   |    ❌     |    10-15     |
-| llvmlipe (256 bits) |   SSE, AVX     |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔   |    ❌     |    12-20     |
-| SVGA3D              | SVGA-II (gen9) |     2.1        |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |  ✔   |    ❌     |    30-60     |
-| SVGA3D              | SVGA-II (gen10)|     4.1        |  ✔  |      ✔     |  ⚠  |      ✔     |  ❌   |   ❌   |  ❌   |    ❌     |    35-80     |
+| Renderer            | Requirements   | OpenGL version | DX9  | DX9 shaders | DX8  | DX8 shaders | DX6-7 | OpenGL | multiple contexts | window mode | Glide | Glide DOS | Expected FPS |
+| :------------------ | :------------: | :------------: | :--: | :---------: | :--: | :---------: | :---: | :----: | :---------------: | :---------: | :---: | :-------: | :----------: |
+| softpipe            |      -         |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔               |  ✔         |  ✔   |    ❌     |    1-3       |
+| llvmlipe (128 bits) |     SSE        |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔               |  ✔         |  ✔   |    ❌     |    10-15     |
+| llvmlipe (256 bits) |   SSE, AVX     |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔               |  ✔         |  ✔   |    ❌     |    12-20     |
+| SVGA3D              | SVGA-II (gen9) |     2.1        |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |  ⚠               |  ✔         |  ✔   |    ❌     |    30-60     |
+| SVGA3D              | SVGA-II (gen10)|     4.1        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔               |  ✔         |  ✔   |    ❌     |    35-80     |
+| qemu-3dfx           | [qemu-3dfx](https://github.com/kjliew/qemu-3dfx) |     native        |  ✔  |      ✔     |  ✔               |  ✔         |   ✔  |      ✔     |  ❌   |   ❌   |  ✔ *   |    ✔ *     |    native/2 *  |
+
+Note for qemu-3dfx: performance depends on CPU emulation - you can reach about 1/2 of native GPU performance when using KVM acceleration on x86-64 host, about 1/5 when using Hyper-V, and about from 1/100 when is using accelerated emulation and about 1/1000 when using full emulation. DOS Glide and *native* Glide wrapper isn't part of SoftGPU. You have to compile it from source or you can [donate qemu-3dfx author](https://github.com/kjliew/qemu-3dfx#donation).
 
 
 Hypervisor translation to real HW GPU:
@@ -57,32 +63,34 @@ Hypervisor translation to real HW GPU:
 | llvmlipe        |   framebuffer   | all                |
 | SVGA3D (gen 9)  | DX9/OpenGL 2.1  | VirtualBox 6+7, VMware Workstation |
 | SVGA3D (gen 10) | DX11/Vulkan     | VirtualBox 7       |
+| qemu-3dfx       | native OpenGL   | QEMU with qemu-3dfx patch|
 
 
 ## Download
 ISO image or ZIP package can be downloaded on release page: https://github.com/JHRobotics/softgpu/releases/
 
 ## Installation
-0) Setup the Virtual Machine
+General instruction for most machines:
+
+0) Setup the Virtual Machine (VM)
 1) Copy installation files on formatted HDD and apply **patcher9x** [Optional but recommended]
 2) Install the Windows 95/98/Me [Windows 98 SE is recommended]
-3) Run setup with `softgpu.exe`
-4) [optional] Install audio drivers (if using AC97 sound card) and USB (if you added USB controller)
-5) [only if you have AC97 sound card] Reinstall DirectX again = AC97 replacing some DX files, but they are not working with newer DX versions
-6) Have fun!
+3) [optional] install **PATCHMEM by rloew** and increase VM memory (1024 MB is usually enough)
+4) [optional] install audio drivers ([the most common drivers are below](#extra-drivers))[^1]
+5) Run setup with `softgpu.exe`
+6) [optional] Install additional drivers, for example USB (if you added USB controller)
+7) Have fun!
+
+[^1]: Do this before install/update DirectX redistributable, because audio drivers usually overwrite DX files with outdated versions.
 
 ## Update
 If you have an older version of SoftGPU installed, you can update without any problem: insert the CD with the latest version into the VM and click install. The installer will take care of all the necessary modifications, only to increase compatibility it is necessary to do some steps manually:
 
-**Update to version v0.4.2023.19**
-- Only applies to 95/98 not Me
-- Fixes occasional problem with DirectDraw detection (3DMark99)
-- Find the following key in the registry:
+**Update to version v0.5.2024.24**
+- *VirtualBox 7.0.x*: it is possible to turn on vGPU10:
 ```
-HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\SessionManager\KnownDLLs
-```
-- And remove the value named `DDRAW` (with data `ddrawme.dll`)
-- Don't do these steps in **Windows Me**, in Me is still this registry key necessary to make DDraw and DX 7 and lower to work!
+VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVGA10" "1"
+``` 
 
 
 ## SoftGPU in action
@@ -94,10 +102,17 @@ HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\SessionManager\KnownDLLs
 
 For comparison, [video from real end-of-era PC is here](https://youtu.be/JqHw-Oh3TfY). So, some work still needs to be done :-)
 
-## VirtualBox VM setup with HW acceleration
+## Hypervisor specific setup
+
+Here are some brief steps for individual virtualisation software:
+- VirtualBox
+- VMware Workstation/Player
+- QEMU
+
+### VirtualBox VM setup with HW acceleration
 1) Create new VM selecting *Machine -> New* in menu
 2) Type: Microsoft Windows, Version: Windows 98
-3) Base memory: **512 MB** (256 MB is minimum, but more 512 MB isn't recommended without additional patches!), CPU: 1
+3) Base memory: **512 MB** (this is minimum (for vGPU10), but more 512 MB isn't recommended without additional patches!), CPU: 1
 4) Disk size: recommended is at least 20 GB for 98/Me (you can select less, but HDD becomes full faster). Select 2 GB if you plan install Windows 95. Tip: If you storing virtual machine on classic HDD, check *Pre-allocate Full Size*, because it leads to lower disk image fragmentation.
 5) Finish wizard
 6) Open VM setting
@@ -108,15 +123,9 @@ For comparison, [video from real end-of-era PC is here](https://youtu.be/JqHw-Oh
   - Check **enable 3D Acceleration**
 7) Optional adjustment
 - set USB controller to USB 1.1 (OHCI) for 98/Me, or turn USB off for 95
-- Audio controller set to **SoundBlaster 16** for 95 ~and 98~ or **AC 97** for 98 and Me (working drivers for Windows 98 are [below](#extra-drivers).
-8) Disable VMSVGA10 **(VirtualBox >= 7.0 only!)**
-- Open command line
-- (on Windows) navigate to VirtualBox installation directory (default: *C:\Program Files\Oracle\VirtualBox*)
-- Enter this command where *My Windows 98* is your Virtual Machine name
-```
-VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVGA10" "0"
-```
-9) Install system - Windows 98 SE is highly recommended (for newer CPU, you need my patch: https://github.com/JHRobotics/patcher9x)
+- Audio controller set to **SoundBlaster 16** for 95 ~and 98~ or **AC 97** for 98 and Me (working drivers for Windows 98 are [below](#extra-drivers)).
+8) Install system - Windows 98 SE is highly recommended (for newer CPU, you need my patch: https://github.com/JHRobotics/patcher9x)
+9) Optional increase memory - especially vGPU10 driver is relative heavy about RAM usage. Apply **PATCHMEM by rloew**, after it you can increase base RAM (768 MB or 1024 MB should be enough)
 10) Insert SoftGPU iso (can be downloaded in Releases) and run `softgpu.exe`
 11) Click on *Install!*
 12) You maybe need some reboots (after MSVCRT and DX installation) and run `softgpu.exe` again.
@@ -126,7 +135,7 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVG
 - to 16 bits for 95, because 95 can't set colour depth on runtime (reboot is required) and lots of old applications can't start in 32 bits (all Glide for example)
 15) Verify settings:
 - OpenGL: run `glchecker.exe` in `tools` on SoftGPU CD
-  - If renderer is **SVGA3D**, you have HW acceleration, congratulation! If you OpenGL version is **2.1**, you done all right. If OpenGL version is **4.1** you have GPU gen 10 active, it isn't wrong, but you may see graphical glitches in lots of games = navigate back to *8.* to turn it off.
+  - If renderer is **SVGA3D**, you have HW acceleration, congratulation! If you OpenGL version is **2.1** you running on vGPU9 - most application works but none vertex/pixel shaders. If OpenGL version is **3.3** you have vGPU10 active, from SoftGPU 0.5.x this is preferred variant and most application should work.
   - If renderer is **llvmpipe**, you have still SW acceleration, but at least accelerated by SSE (128 bits) or AVX (256 bit). GPU acceleration is disabled or you real GPU isn't sporting HW acceleration.
   - If renderer is **softpipe**, you have SW acceleration and running on reference (but slow) renderer, SIMD ins't accesable somehow, or you on 95, where is softpipe renderer by default, even if SIMD hack is installed (more in Mesa9x documentation: https://github.com/JHRobotics/mesa9x).
   - If renderer is **Generic**, then ICD OpenGL DLL is not loaded. Something is wrong with system or you installed SSE instrumented binaries on no SSE enabled/supported guest.
@@ -136,10 +145,10 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVG
   - On Me you can still run **dxdiag**, but you can only check DX8 and DX9, because we cannot easily replace system `DDRAW.DLL`. But DX6 and DX7 games should usually run without problems
   - On 95 you can still run **dxdiag**, but if you run test, you only see black screens, but again, games (if supporting 95) games should usually run
 
-### AMD Zen, 11th Generation Intel Core and newer
+#### AMD Zen, 11th Generation Intel Core and newer
 Newer CPU have excellent performance but needs some extra tune:
 1) apply [patcher9x](https://github.com/JHRobotics/patcher9x) - this is required!
-2) Change TSC (Time Stamp Counter) behaviour (Warning: this options is not available when VirtualBox is using Hyper-V as execution, engine!)
+2) Change TSC (Time Stamp Counter) behaviour (Warning: this options is not available when VirtualBox is using Hyper-V as execution engine!)
 ```
 VBoxManage setextradata "My Windows 98" "VBoxInternal/TM/TSCTiedToExecution" 1
 ```
@@ -148,17 +157,44 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/TM/TSCTiedToExecution" 1
 VBoxManage modifyvm "My Windows 98" --cpu-profile "AMD Ryzen 7 1800X Eight-Core"
 ```
 
+### vGPU9 vs. vGPU10
 
-## VMware Workstation setup with HW acceleration
+There are 2 variant of graphical HW acceleration in VirtualBox 7:
+
+**vGPU9** (9 from DirectX 9) is older variant used usually to accelerate Windows Vista/7 aero and some desktop application. On host system is drawing by DirectX 9 (Windows) or OpenGL (Linux/Mac OS). Problem is very low pixel/vertex shader support, so DirectX 8 and DirectX 9 games can't use shaders. Keep on mind that DirectX in SoftGPU is emulated by Wine, so some non-shaders applications can have problems, because some behaviour is emulated by shaders.
+
+**vGPU10** (10 from Windows 10) is newer variant and is intended for acceleration of DirectX 12 (and DirectX 12 can emulate all older DirectX API). On host system is drawing by DirectX 12 (on Linux is translated by **dxvk** to Vulkan). Main problem is a relatively large amount of bugs ([see  summary  here](https://www.virtualbox.org/ticket/21515)). vGPU10 don't work well with SoftGPU 0.4.x releases, but SoftGPU 0.5.x solved most of problem and now this is preferred variant.
+
+Switch between vGPU9 and vGPU10:
+
+- Open command line
+- (on Windows) navigate to VirtualBox installation directory (default: *C:\Program Files\Oracle\VirtualBox*)
+- Enter this command to use **vGPU9** where *My Windows 98* is your Virtual Machine name:
+```
+VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVGA10" "0"
+```
+- This command is force use **vGPU10**:
+```
+VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVGA10" "1"
+```
+- vGPU variant is choose by VirtualBox (default) and vGPU10 is preferred if host hardware is support DX 11.1/Vulkan[^2].
+```
+VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVGA10" ""
+```
+
+[^2]: OK, and there some bugs, so VirtualBox is using vGPU10 event on DX10 only GPUs, so result is usually nice black screen...
+
+
+### VMware Workstation setup with HW acceleration
 SoftGPU with HW acceleration was tested only with lasted version of VMware Workstation (17.0.0 build-20800274), if you'll be successful with older version or free VMware player, please let me know.
 
-### General information
+#### General information
 - Use **Windows 98 SE**, newer Mesa is not currently working in 95 and Windows 98 FE (first edition) hasn't supporting WDM sound cards so you might have a problem with sound.
 - **Fresh install**, Windows 9x doesn't like hardware changes and if you import import VM from somewhere, strange problems may occur.
 - **no VMware additions**, ~because they only contain basic display driver,~ contain mouse integration driver and tray program which **is replacing display driver to VMware default display driver** [and some integration utilities](https://github.com/JHRobotics/softgpu/issues/14).  If you want mouse integration driver (but is useless for gaming with mouse) alone driver is [listed below](#extra-drivers).
 - set as hardware compatibility **Workstation 9.x** and VM type **Windows 2000 Server**. VMware in other cases is comparing installed addition tools version and features with hypervisor version and if they don't match refuses to expose SVGA 3D commands to guest.
 
-### Step by step guide
+#### Step by step guide
 1) Create new VM - from menu File->New Virtual Machine
 2) In wizard choose *Custom (advanced)* click on next:
   - As *Hardware compatibility* select **Workstation 9.x** (important)
@@ -182,9 +218,7 @@ SoftGPU with HW acceleration was tested only with lasted version of VMware Works
 ![](resource/docs/vmw-setup-3.png)
 
   - click on *USB Controller* and set *USB compatibility* to **USB 1.1** or remove USB controller completely
-  - click on *Display* and check **Accelerate 3D graphics**
-
-![](resource/docs/vmw-setup-4.png)
+  - click on *Display* but make sure, that **Accelerate 3D graphics** is turned **off** for installation = VMWare 7.x is painfully slow on 4/8-bit mode when is 3D acceleration enabled. So, turn in off for installation and turn in on after SoftGPU is installed.
 
   - (optional) click on *Printer* and click *Remove* (if you don't plan to use this feature, you'll save yourself from a pointless warning message)
   - click on *New CD/DVD (IDE)* and point *Use ISO image file* to your Windows 98 installation CD ISO.
@@ -200,14 +234,18 @@ SoftGPU with HW acceleration was tested only with lasted version of VMware Works
 7) Click on *Install!*
 8) You maybe need some reboots (after MSVCRT and DX installation) and run `softgpu.exe` again.
 9) After complete and final reboot system should start in 640x480 in 32 bits per pixel colors.
-10) If you have still mouse trouble, open *Device Manager* (by cursor keys select *My Computer* and press `Alt`+`Enter` to open properties), then disable all *HID-compliant mouse*. Reboot VM after done!
+10) If you have mouse trouble, open *Device Manager* (by cursor keys select *My Computer* and press `Alt`+`Enter` to open properties), then disable all *HID-compliant mouse*. Reboot VM after done!
 
 ![VMware HID devices disabled](resource/docs/vmw-hid.png)
 
-11) Use `glchecker.exe` to verify settings
+11) Turn off VM, open VM setting and under Display check **Accelerate 3D graphics**
+
+![](resource/docs/vmw-setup-4.png)
+
+12) Start VM and use `glchecker.exe` to verify settings.
 
 
-## VMware Workstation Player
+### VMware Workstation Player
 VMware Workstation Player hasn't GUI option to select virtual machine version. But you can set it manually by editing `*.vmx` file:
 
 0) Turn VM off
@@ -226,10 +264,21 @@ virtualHW.version = "9"
 
 
 
-## QEMU
-Hardware 3D support isn't available yet with QEMU. 2D driver now works with QEMU `-vga std` or `-vga vmware`. But main problem with QEMU is bad detection of a PCI bus. If the PCI bus is detected badly, system won't enumerate most of device - VGA adapter, sound and network card and even IDE bus.
+### QEMU
 
-### PCI bus detection fix
+There is no native 3D acceleration support for QEMU yet, but you can apply QEMU-3dfx patches.
+
+Next problem with QEMU is, that Windows 98 incorrectly detected PCI bus as PnP BIOS. There is 2 solutions for it.
+
+#### Non-PnP BIOS
+
+This is best for fresh installations. First you need [SeaBIOS](https://www.seabios.org/SeaBIOS) with disabled `CONFIG_PNPBIOS`. You can compile manually from source or you can use my binary: [seabios-qemu.zip](https://files.emulace.cz/seabios-qemu.zip). Extract `bios.bin` somewhere and run QEMU with '-bios /path/to/somewhere/bios.bin'. Windows 9x installation with this BIOS should detect all hardware without problems.
+
+
+#### PCI bus detection fix
+
+If you have already installed system and you don't see any PCI hardware, use these steps:
+
 1) Open Device Manager and locate *Plug and Play BIOS* (Exclamation mark should be on it)
 
 ![QEMU PCI: Plug and Play BIOS](resource/docs/qemu-pci-1.png)
@@ -264,26 +313,33 @@ warning message and reboot computer.
 
 8) After reboot (again), you have working system now and you can install SoftGPU and other drivers.
 
-## Virtual GPU gen. 10
-VirtualBox 7.0 is supporting newer technology for rendering. It is supporting pixel/vertex/computing shaders but it is still incomplete. You can turn in by this command.
-```
-VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVGA10" "1"
-```
+#### QEMU-3dfx
 
-On most configurations this is turn on by default (allows for example Windows 7-11 desktop composition aka "aero") but for legacy technologies isn't ready yet - you can probably see some serious graphical glitches if you use it with pre DirectX 9 application/games. But if you want run 3DMark03 or 2001 you'll have to turn this on. If you application or game work with this configuration, it usually runs smoother than with GPU gen. 9.
+1) [Built patched QEMU](https://github.com/kjliew/qemu-3dfx?tab=readme-ov-file#building-qemu)
+2) Install Windows 98 with disabled CPU accelerator (it's a bit slow)
+3) Check if you see PCI bus on Hardware manager
+4) (optional) Install audio driver you're using AC-97
+5) Mount SoftGPU ISO and install SoftGPU
+6) Reboot and check if video driver works
+7) Now you can shutdown VM and run again with CPU accelerator enabled
+8) Now navigate to SoftGPU CD to `extras\qemu3dfx` folder and you have do set the signature:
+
+For QEMU-3dfx need both wrapper and hypervisor same signature to works. This signature is first 7 characters from GIT revision hash. You can obtain the hash by this command in cloned qemu-3dfx repository:
+```
+git rev-parse HEAD
+```
+Binaries in SoftGPU allows to override build signature registry keys. To check that you have same signature as QEMU run `testqmfx.exe` (in `extras\qemu3dfx`). If you see error 0x45A (= ERROR_DLL_INIT_FAILED), you have wrong signature. In this case edit `set-sign.reg` (copy it from CD to writeable location) and rewrite the value `REV_QEMU3DFX` to revision hash obtain from GIT (you need only first 7 characters, retype full hash isn't necessary). After it apply file to registry (by double click on file) and run `testqmfx.exe` to check the result - you should see rotating triangle on success and see OpenGL information from your host GPU.
+
+9) Copy `fxmemmap.vxd` and `qmfxgl32.dll` to `C:\WINDOWS\SYSTEM` and apply file `icd-enable.reg` (this tells to driver using `qmfxgl32.dll` when system `opengl32.dll` ask about OpenGL driver).
+10) reboot (**required**)
+11) run *GLchecker* or some other 3D application to verify settings.
+
 
 ## Bugs
 Currently there are known these limitations:
 
 ### Vertex Shaders
-Vertex shaders not working correctly with HW acceleration. You can see it, for example, with 3D Mark 2001/2003 tests. Using shaders is very rare in DirectX 8 games, but very common in DirectX 9 games (on other hand, these are usually games after Windows 9x era). As temporary solution you can turn off HW acceleration (but rendering will be much slower). Some games also has failback technology if GPU hasn't shader support (for example GTA SA). You can globally disable Vertex Shaders inserting this to registry:
-
-```
-REGEDIT4
-
-[HKEY_LOCAL_MACHINE\Software\Wine\global]
-"MaxShaderModelVS"=dword:00000000
-```
+**Update for 0.5.x versions**: Vertex Shaders works on vGPUv10 (VirtualBox 7) and for qemu-3dfx. For vGPU9 (VMware, VirtualBox 6.1) are DirectX shaders disabled, so most of applications can use shader alternative (most of DX8 games and lost of DX9).
 
 ### Windows 95 support
 Windows 95 support is limited - SoftGPU works, but there lots of extra bugs will appear and if you haven't any special reasons for using Windows 95 use recommended Windows 98 Second edition instead.
@@ -351,8 +407,12 @@ http://files.emulace.cz/7z920.exe
 ```
 
 
+## Runtime configuration
 
-## Compilation from source
+There a few registry keys to configure SoftGPU and its component, more on [softgpu.md](softgpu.md) or *softgpu.html* on SoftGPU CD.
+
+
+## Compilation from source (outdated)
 1) You need MINGW and *GNU make* to build *softgpu.exe*
 2) You need all development tool to compile all other component (see README.md in individual repositories)
 3) Compile softgpu.exe by type `make`

@@ -230,3 +230,35 @@ BOOL registryWriteDWORD(const char *path, DWORD dw)
 	sprintf(buf, "%lu", dw);
 	return registryWrite(path, buf, WINREG_DWORD);
 }
+
+
+BOOL registryDelete(const char *path)
+{
+	HKEY rootkey;
+	const char *key;
+	const char *subkey;
+	BOOL rc = FALSE;
+	
+	//printf("deleting key: %s ", path);
+	
+	if(registrySplitPath(path, &rootkey, &key, &subkey))
+	{
+		HKEY hKey;
+		LSTATUS lResult = -1;
+		
+		//lResult = RegCreateKeyA(rootkey, key, &hKey);
+		lResult = RegOpenKeyEx(rootkey, key, 0, KEY_READ | KEY_WRITE, &hKey);
+		if(lResult == ERROR_SUCCESS)
+		{
+			if(RegDeleteValueA(hKey, subkey) == ERROR_SUCCESS)
+			{
+				rc = TRUE;
+			}
+		}
+		RegCloseKey(hKey);
+	}
+	
+	//printf("was: %d\n", rc);
+	
+	return rc;
+}

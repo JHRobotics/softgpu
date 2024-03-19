@@ -13,7 +13,7 @@ typedef struct _version_t
 } version_t;
 
 void version_parse(const char *version_str, version_t *out);
-int version_compare(version_t *v1, version_t *v2);
+int version_compare(const version_t *v1, const version_t *v2);
 void version_win(version_t *v);
 BOOL version_is_nt();
 DWORD checkInstallation();

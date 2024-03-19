@@ -133,7 +133,7 @@ void version_parse(const char *version_str, version_t *out)
  * v1 == v2 =>  0
  * v1  > v2 => positive
  */
-int version_compare(version_t *v1, version_t *v2)
+int version_compare(const version_t *v1, const version_t *v2)
 {
 	int r = v1->major - v2->major;
 	if(r == 0)

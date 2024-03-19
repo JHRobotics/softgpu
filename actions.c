@@ -26,12 +26,10 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
-#include "winini.h"
-#include "windrv.h"
-#include "actions.h"
-#include "filecopy.h"
-#include "winreg.h"
-#include "setuperr.h"
+#include <stdint.h>
+
+#include "softgpu.h"
+
 #include "nocrt.h"
 
 #define MAX(_a, _b) (((_b) > (_a)) ? (_b) : (_a))
@@ -315,11 +313,6 @@ BOOL proc_wait(HWND hwnd)
 	return TRUE;
 }
 
-extern version_t sysver;
-extern version_t WINVER98SE;
-extern version_t WINVER98;
-extern version_t WINVERME;
-
 void install_infobox(HWND hwnd, const char *name)
 {
 	static char msg_buffer[512];
@@ -351,6 +344,40 @@ BOOL mscv_start(HWND hwnd)
 	return install_run(iniValue("[softgpu]", "msvcrtpath"), &pi_proc, &pi_thread, TRUE);
 }
 
+void delete_bad_dx_files()
+{
+	char syspath[MAX_PATH];
+	size_t syspath_len;
+	
+	if(GetSystemDirectoryA(syspath, MAX_PATH) == 0)
+	{
+		return;
+	}
+	syspath_len = strlen(syspath);
+	
+	strcpy(syspath+syspath_len, "\\ddraw.dll");
+	if(is_wrapper(syspath, FALSE))
+	{
+		DeleteFileA(syspath);
+	}
+	
+	strcpy(syspath+syspath_len, "\\d3d8.dll");
+	if(is_wrapper(syspath, FALSE))
+	{
+		DeleteFileA(syspath);
+	}
+	
+	if(version_compare(&sysver, &WINVER98) >= 0)
+	{
+		strcpy(syspath+syspath_len, "\\d3d9.dll");
+		if(is_wrapper(syspath, FALSE))
+		{
+			removeROFlag(syspath);
+			DeleteFileA(syspath);
+		}
+	}
+}
+
 BOOL dx_start(HWND hwnd)
 {
 	if(dx_path == NULL)
@@ -359,6 +386,9 @@ BOOL dx_start(HWND hwnd)
 	}
 	
 	install_infobox(hwnd, "MS DirectX");
+	
+	delete_bad_dx_files();
+	
 	return install_run(dx_path, &pi_proc, &pi_thread, TRUE);
 }
 
@@ -403,14 +433,188 @@ void setInstallSrc(const char *path)
 	src_path = path;
 }
 
+static void fix_ddraw(const char* file)
+{
+	const uint8_t search[] = {
+		0x44, 0x44, 0x52, 0x41, 0x57, 0x31, 0x36, 0x2E, 0x44, 0x4C, 0x4C, 0x00, 0x44, 0x44, 0x52, 0x41, // ; DDRAW16.DLL.DDRA
+		0x57, 0x2E, 0x44, 0x4C, 0x4C, 0x00                                                              // ; W.DLL.
+	};
+	const size_t replace_pos = 12;
+	const char defname[] = "ddraw.dll";
+	const char    dest[] = "ddsys.dll";
+	int found = 0;
+	
+	FILE *fr = fopen(file, "rb");
+	if(fr != NULL)
+	{
+		size_t fs = 0;
+		uint8_t *mem = NULL;
+		
+		fseek(fr, 0, SEEK_END);
+		fs = ftell(fr);
+		fseek(fr, 0, SEEK_SET);
+		
+		mem = (uint8_t*)malloc(fs);
+		if(mem != NULL)
+		{
+			if(fread(mem, 1, fs, fr) == fs)
+			{
+				fclose(fr);
+				fr = NULL;
+
+				size_t i, j;
+				
+				for(i = 0; i < fs - sizeof(search); i++)
+				{
+					if(memcmp(mem+i, search, sizeof(search)) == 0)
+					{
+						for(j = 0; j < sizeof(defname)-1; j++)
+						{
+							mem[i+replace_pos+j] = toupper(dest[j]);
+						}
+						found++;
+					}
+				}
+				
+				if(found > 0)
+				{
+					FILE *fw = fopen(file, "wb");
+					if(fw)
+					{
+						fwrite(mem, 1, fs, fw);
+						
+						fclose(fw);
+					}
+				}
+			}
+			
+			free(mem);
+		}
+		
+		if(fr != NULL) fclose(fr);
+	};
+}
+
 static HANDLE filescopy_thread = 0;
 static int copiedfiles = 0;
+
+void backup_sysfiles()
+{
+	char syspath[MAX_PATH];
+	size_t syspath_len;
+	char inspath[MAX_PATH];
+	size_t inspath_len;
+	
+	if(GetSystemDirectoryA(syspath, MAX_PATH) == 0)
+	{
+		return;
+	}
+	syspath_len = strlen(syspath);
+	strcpy(inspath, install_path);
+	inspath_len = strlen(inspath); 
+	
+	/* create dirs */
+	strcpy(inspath+inspath_len, "\\backup");
+	mkdir_recrusive(inspath);
+	strcpy(inspath+inspath_len, "\\sys");
+	mkdir_recrusive(inspath);
+	
+	/* ddraw.dll */
+	strcpy(syspath+syspath_len, "\\ddraw.dll");
+	if(!is_wrapper(syspath, TRUE))
+	{
+		strcpy(inspath+inspath_len, "\\backup\\ddraw.dll");
+		CopyFileA(syspath, inspath, FALSE);
+		
+		strcpy(inspath+inspath_len, "\\sys\\ddsys.dll");
+		if(CopyFileA(syspath, inspath, FALSE))
+		{
+			removeROFlag(inspath);
+			fix_ddraw(inspath);
+			install_settings.has_sys_ddraw = TRUE;
+		}
+	}
+	else
+	{
+		strcpy(syspath+syspath_len, "\\ddsys.dll");
+		if(!is_wrapper(syspath, TRUE))
+		{
+			strcpy(inspath+inspath_len, "\\sys\\ddsys.dll");
+			if(CopyFileA(syspath, inspath, FALSE))
+			{
+				removeROFlag(inspath);
+				fix_ddraw(inspath);
+				install_settings.has_sys_ddraw = TRUE;
+			}
+		}
+	}
+	
+	/* d3d8.dll */
+	strcpy(syspath+syspath_len, "\\d3d8.dll");
+	if(!is_wrapper(syspath, TRUE))
+	{
+		strcpy(inspath+inspath_len, "\\backup\\d3d8.dll");
+		CopyFileA(syspath, inspath, FALSE);
+		
+		strcpy(inspath+inspath_len, "\\sys\\msd3d8.dll");
+		if(CopyFileA(syspath, inspath, FALSE))
+		{
+			removeROFlag(inspath);
+			install_settings.has_sys_d3d8 = TRUE;
+		}
+	}
+	else
+	{
+		strcpy(syspath+syspath_len, "\\msd3d8.dll");
+		if(!is_wrapper(syspath, TRUE))
+		{
+			strcpy(inspath+inspath_len, "\\sys\\msd3d8.dll");
+			if(CopyFileA(syspath, inspath, FALSE))
+			{
+				removeROFlag(inspath);
+				install_settings.has_sys_d3d8 = TRUE;
+			}
+		}
+	}
+	
+	/* d3d9.dll */
+	strcpy(syspath+syspath_len, "\\d3d9.dll");
+	if(!is_wrapper(syspath, TRUE))
+	{
+		strcpy(inspath+inspath_len, "\\backup\\d3d9.dll");
+		CopyFileA(syspath, inspath, FALSE);
+		
+		strcpy(inspath+inspath_len, "\\sys\\msd3d9.dll");
+		if(CopyFileA(syspath, inspath, FALSE))
+		{
+			removeROFlag(inspath);
+			install_settings.has_sys_d3d9 = TRUE;
+		}
+	}
+	else
+	{
+		strcpy(syspath+syspath_len, "\\msd3d9.dll");
+		if(!is_wrapper(syspath, TRUE))
+		{
+			strcpy(inspath+inspath_len, "\\sys\\msd3d9.dll");
+			if(CopyFileA(syspath, inspath, FALSE))
+			{
+				removeROFlag(inspath);
+				install_settings.has_sys_d3d9 = TRUE;
+			}
+		}
+	}
+	
+	
+}
 
 DWORD WINAPI filescopy_proc(LPVOID lpParameter)
 {
 	(void)lpParameter;
 	
 	copiedfiles = copydir(src_path, install_path);
+	
+	backup_sysfiles();
 	
 	return 0;
 }
@@ -471,24 +675,19 @@ BOOL filescopy_result(HWND hwnd)
 	return TRUE;
 }
 
-BOOL install_wine = FALSE;
-BOOL install_glide = FALSE;
-BOOL install_res_qxga = FALSE;
-BOOL install_res_1440 = FALSE;
-BOOL install_res_4k = FALSE;
-BOOL install_res_5k = FALSE;
+install_settings_t install_settings = {FALSE};
 
 BOOL setLineSvga(char *buf, size_t bufs)
 {
 	(void)bufs;
 	
 	strcpy(buf, "CopyFiles=VMSvga.Copy");
-	if(install_wine)
+	if(install_settings.install_wine)
 	{
 		strcat(buf, ",Dx.Copy,DX.CopyBackup");
 	}
 	
-	if(install_glide)
+	if(install_settings.install_glide)
 	{
 		strcat(buf, ",Voodoo.Copy");
 	}
@@ -501,12 +700,12 @@ BOOL setLineVbox(char *buf, size_t bufs)
 	(void)bufs;
 	
 	strcpy(buf, "CopyFiles=VBox.Copy");
-	if(install_wine)
+	if(install_settings.install_wine)
 	{
 		strcat(buf, ",Dx.Copy,DX.CopyBackup");
 	}
 	
-	if(install_glide)
+	if(install_settings.install_glide)
 	{
 		strcat(buf, ",Voodoo.Copy");
 	}
@@ -519,12 +718,12 @@ BOOL setLineQemu(char *buf, size_t bufs)
 	(void)bufs;
 	
 	strcpy(buf, "CopyFiles=Qemu.Copy");
-	if(install_wine)
+	if(install_settings.install_wine)
 	{
 		strcat(buf, ",Dx.Copy,DX.CopyBackup");
 	}
 	
-	if(install_glide)
+	if(install_settings.install_glide)
 	{
 		strcat(buf, ",Voodoo.Copy");
 	}
@@ -538,22 +737,22 @@ BOOL setLineSvgaReg(char *buf, size_t bufs)
 	
 	strcpy(buf, "AddReg=VMSvga.AddReg,VM.AddReg");
 	
-	if(install_wine && version_compare(&sysver, &WINVERME) >= 0)
+	if(install_settings.install_wine && version_compare(&sysver, &WINVERME) >= 0)
 	{
 		/* these entries is only relevant to system, that cannot replace ddraw.dll */
 		strcat(buf, ",DX.addReg");
 	}
 	
-	if(install_res_qxga)
+	if(install_settings.install_res_qxga)
 		strcat(buf, ",VM.QXGA");
 	
-	if(install_res_1440)
+	if(install_settings.install_res_1440)
 		strcat(buf, ",VM.WQHD");
 	
-	if(install_res_4k)
+	if(install_settings.install_res_4k)
 		strcat(buf, ",VM.UHD");
 	
-	if(install_res_5k)
+	if(install_settings.install_res_5k)
 		strcat(buf, ",VM.R5K");
 	
 	return TRUE;
@@ -564,19 +763,22 @@ BOOL setLineVboxReg(char *buf, size_t bufs)
 	(void)bufs;
 	
 	strcpy(buf, "AddReg=VBox.AddReg,VM.AddReg");
-	if(install_wine)
-		strcat(buf, ",DX.addReg");
 	
-	if(install_res_qxga)
+	if(install_settings.install_wine && version_compare(&sysver, &WINVERME) >= 0)
+	{
+		strcat(buf, ",DX.addReg");
+	}
+	
+	if(install_settings.install_res_qxga)
 		strcat(buf, ",VM.QXGA");
 	
-	if(install_res_1440)
+	if(install_settings.install_res_1440)
 		strcat(buf, ",VM.WQHD");
 	
-	if(install_res_4k)
+	if(install_settings.install_res_4k)
 		strcat(buf, ",VM.UHD");
 	
-	if(install_res_5k)
+	if(install_settings.install_res_5k)
 		strcat(buf, ",VM.R5K");
 	
 	return TRUE;
@@ -587,23 +789,153 @@ BOOL setLineQemuReg(char *buf, size_t bufs)
 	(void)bufs;
 	
 	strcpy(buf, "AddReg=Qemu.AddReg,VM.AddReg");
-	if(install_wine)
-		strcat(buf, ",DX.addReg");
 	
-	if(install_res_qxga)
+	if(install_settings.install_wine && version_compare(&sysver, &WINVERME) >= 0)
+	{
+		strcat(buf, ",DX.addReg");
+	}
+	
+	if(install_settings.install_res_qxga)
 		strcat(buf, ",VM.QXGA");
 	
-	if(install_res_1440)
+	if(install_settings.install_res_1440)
 		strcat(buf, ",VM.WQHD");
 	
-	if(install_res_4k)
+	if(install_settings.install_res_4k)
 		strcat(buf, ",VM.UHD");
 	
-	if(install_res_5k)
+	if(install_settings.install_res_5k)
 		strcat(buf, ",VM.R5K");
 	
 	return TRUE;
 }
+
+BOOL setLineMeFix(char *buf, size_t bufs)
+{
+	(void)bufs;
+	
+	if(version_compare(&sysver, &WINVERME) > 0 &&
+		install_settings.install_wine)
+	{
+		size_t s_full = strlen(buf);
+		size_t s_prefix = sizeof(";mefix:") - 1;
+		size_t i;
+		
+		// memmove(buf, buf + s_prefix, s_full - s_prefix + 1);
+		for(i = 0; i < s_full - s_prefix + 1; i++)
+		{
+			buf[i] = buf[i + s_prefix];
+		}
+	}
+	
+	return TRUE;
+}
+
+BOOL setBug565(char *buf, size_t bufs)
+{
+	(void)bufs;
+	char *dst = strstr(buf, ",,");
+	if(dst)
+	{
+		sprintf(dst+2, "%d", install_settings.bug_rgb565 ? 1 : 0);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+BOOL setBugPreferFifo(char *buf, size_t bufs)
+{
+	(void)bufs;
+	char *dst = strstr(buf, ",,");
+	if(dst)
+	{
+		sprintf(dst+2, "%d", install_settings.bug_prefer_fifo ? 1 : 0);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+BOOL setBugDxFlags(char *buf, size_t bufs)
+{
+	(void)bufs;
+	char *dst = strstr(buf, ",,");
+	if(dst)
+	{
+		sprintf(dst+2, "%d", install_settings.bug_dx_flags ? 1 : 0);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+BOOL setLimitGMR(char *buf, size_t bufs)
+{
+	(void)bufs;
+	char *dst = strstr(buf, ",,");
+	if(dst)
+	{
+		sprintf(dst+2, "%d", install_settings.gmr_limit);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+BOOL setLimitVRAM(char *buf, size_t bufs)
+{
+	(void)bufs;
+	char *dst = strstr(buf, ",,");
+	if(dst)
+	{
+		sprintf(dst+2, "%d", install_settings.vram_limit);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+BOOL setLineSyscopy(char *buf, size_t bufs)
+{
+	(void)bufs;
+	BOOL fix_line = FALSE;
+	
+	if(strstr(buf, "ddsys.dll") != NULL)
+	{
+		if(install_settings.has_sys_ddraw)
+		{
+			fix_line = TRUE;
+		}
+	}
+	
+	if(strstr(buf, "msd3d8.dll") != NULL)
+	{
+		if(install_settings.has_sys_d3d8)
+		{
+			fix_line = TRUE;
+		}
+	}
+	
+	if(strstr(buf, "msd3d9.dll") != NULL)
+	{
+		if(install_settings.has_sys_d3d9)
+		{
+			fix_line = TRUE;
+		}
+	}
+	
+	if(fix_line)
+	{	
+		int line_start = sizeof(";syscopy:")-1;
+		int line_len  = strlen(buf);
+		int i;
+			
+		for(i = 0; i < line_len - line_start + 1; i++)
+		{
+			buf[i] = buf[i + line_start];
+		}
+	}
+	
+	return TRUE;
+}
+
+
 
 linerRule_t infFixRules[] = {
 	{"CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",   TRUE, TRUE, setLineVbox},
@@ -612,6 +944,13 @@ linerRule_t infFixRules[] = {
 	{"AddReg=VBox.AddReg,VM.AddReg,DX.addReg",                  TRUE, TRUE, setLineVboxReg},
 	{"AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg",                TRUE, TRUE, setLineSvgaReg},
 	{"AddReg=Qemu.AddReg,VM.AddReg,DX.addReg",                  TRUE, TRUE, setLineQemuReg},
+	{"HKLM,Software\\VMWSVGA,RGB565bug,,0",                     TRUE, TRUE, setBug565},
+	{"HKLM,Software\\VMWSVGA,PreferFIFO,,0",                    TRUE, TRUE, setBugPreferFifo},
+	{"HKLM,Software\\Mesa3D\\global,SVGA_CLEAR_DX_FLAGS,,1",    TRUE, TRUE, setBugDxFlags},
+	{"HKLM,Software\\Mesa3D\\global,SVGA_GMR_LIMIT,,128",       TRUE, TRUE, setLimitGMR},
+	{"HKLM,Software\\VMWSVGA,VRAMLimit,,128",                   TRUE, TRUE, setLimitVRAM},
+	{";mefix:",                                                FALSE, TRUE, setLineMeFix},
+	{";syscopy:",                                              FALSE, TRUE, setLineSyscopy},
 	{NULL, FALSE, FALSE, NULL}
 };
 
@@ -668,12 +1007,39 @@ BOOL simd95(HWND hwnd)
 	return TRUE;
 }
 
+BOOL winenine(HWND hwnd)
+{
+	(void)hwnd;
+	
+	if(install_settings.dd_set_system)
+		registryWrite("HKLM\\Software\\DDSwitcher\\global", "system", WINREG_STR);
+	else
+		registryWrite("HKLM\\Software\\DDSwitcher\\global", "wine", WINREG_STR);
+	
+	if(install_settings.d8_set_nine)
+		registryWrite("HKLM\\Software\\D8Switcher\\global", "ninemore", WINREG_STR);
+	else
+		registryWrite("HKLM\\Software\\D8Switcher\\global", "wine", WINREG_STR);
+		
+	if(install_settings.d9_set_nine)
+		registryWrite("HKLM\\Software\\D9Switcher\\global", "nine", WINREG_STR);
+	else
+		registryWrite("HKLM\\Software\\D9Switcher\\global", "wine", WINREG_STR);
+	
+	return TRUE;
+}
+
 BOOL apply_reg_fixes(HWND hwnd)
 {
 	const char *line = NULL;
 	char buf[1024];
 	int index = 0;
 	(void)hwnd;
+	
+	if(version_compare(&sysver, &WINVERME) < 0)
+	{
+		registryDelete("HKLM\\System\\CurrentControlSet\\Control\\SessionManager\\KnownDLLs\\DDRAW");
+	}
 	
 	for(; (line = iniLine("[fixes]", index)) != NULL; index++)
 	{
@@ -691,6 +1057,12 @@ BOOL apply_reg_fixes(HWND hwnd)
 				{
 					registryWrite(buf, p, WINREG_DWORD);
 				}
+			}
+			else if(strstr(p, ";DELETE") == p)
+			{
+				memcpy(buf, line, p-line);
+				buf[p-line] = '\0';
+				registryDelete(buf);
 			}
 			else
 			{

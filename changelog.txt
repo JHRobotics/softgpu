@@ -1,3 +1,23 @@
+0.5.2024.24
+! fixed the most of mouse cursor bugs
+! limited RAM memory usage
+! fixed some setup GUI bugs (introduced in 0.4.2023.18)
+- vGPU10 finaly works
+- DirectDraw HAL (2D only)
+- Driver: reduced usage of 16bit RING-3 code (increase stability and speed)
+- Driver: command buffers disabled for vGPU9 deviced (FIFO usage looks stable and faster)
+- Wine: replaced window proc daisy chain with hooks (increase compatibility by a lot)
+- Wine: report no shader support for vGPU9 devices (they didn't work anyway)
+- Wine: DX 8 + D9 implementation switcher
+- Wine: DLL version is set to 4.9.0.904
+- OpenGlide: fixed multi-thread rendering
+- Mesa: optimized driver
+- Mesa: various rendering fixes
+- Mesa: Nine support (experimental)
+- Mesa: 8-to-9 wrapper for Nine (experimental)
+- Mesa: vGPU10 - OpenGL version 3.3
+- QEMU: QEMU-3Dfx OpenGL ICD driver
+
 0.4.2023.19
 ! fixed GPUs without CB (VBox <= 6.1)
 ! fixed GMR allocation pool (introduced in 0.4.2023.13)

@@ -28,5 +28,7 @@
 
 void removeROFlag(const char *path);
 int copydir(const char *from, const char *to);
+BOOL is_dir(const char *path);
+BOOL mkdir_recrusive(const char *path);
 
 #endif /* __FILECOPY_H__INCLUDED__ */

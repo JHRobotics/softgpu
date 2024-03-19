@@ -29,15 +29,7 @@
 #include <stdint.h>
 #include <math.h>
 
-#include "winini.h"
-#include "actions.h"
-
-#include "windrv.h"
-#include "winreg.h"
-
-#include "actions.h"
-#include "setuperr.h"
-#include "softgpuver.h"
+#include "softgpu.h"
 
 #include "nocrt.h"
 
@@ -83,140 +75,116 @@ void about(HWND hwnd)
 	MessageBoxA(hwnd, txtbuf, "About SoftGPU", MB_OK);
 }
 
+void sysinfo(HWND hwnd)
+{
+	MessageBoxA(hwnd, sysinfomsg, "System informations", MB_OK);
+}
+
+void runprog(const char *exe_name)
+{
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	char dirname_buf[MAX_PATH];
+	char *dirname = NULL;
+	char *basename = strrchr(exe_name, '\\');
+	
+	if(basename != NULL)
+	{
+		DWORD s2 = basename-exe_name;
+		DWORD s = GetCurrentDirectory(MAX_PATH, dirname_buf);
+		dirname_buf[s] = '\\';
+		
+		memcpy(&dirname_buf[s+1], exe_name, s2);
+		dirname_buf[s+s2+1] = '\0';
+	}
+
+	memset(&si, 0, sizeof(si));
+	si.cb = sizeof(si);
+  memset(&pi, 0, sizeof(pi));
+	
+	CreateProcessA(exe_name,
+	NULL,
+  NULL,
+  NULL,
+  FALSE,
+  0,
+  NULL,
+  dirname,
+  &si,
+  &pi);
+  
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+}
+
 #define WND_SOFTGPU_CLASS_NAME "SoftGPUCLS"
 #define WND_SOFTGPU_LOAD_CLASS_NAME "SoftGPULDCLS"
 
-#define CHBX_MSCRT  1
-#define CHBX_DX     2
-#define INP_PATH    3
-#define BTN_BROWSE  4
-#define RAD_NORMAL  5
-#define RAD_SSE     6
-#define CHBX_WINE   7
-#define CHBX_GLIDE  8
-#define CHBX_SIMD95 9
-#define CHBX_FIXES  10
-//#define CHBX_IE     11
+float rdpiX = 1.0;
+float rdpiY = 1.0;
 
-#define BTN_EXIT    11
-#define BTN_INSTALL 12
-#define CHBX_GL95   13
-#define BTN_ABOUT   14
-
-#define CHBX_QXGA   15
-#define CHBX_1440   16
-#define CHBX_4K     17
-#define CHBX_5K     18
-
-#define CHBX_NO_INSTALL 19
-
-static float rdpiX = 1.0;
-static float rdpiY = 1.0;
-
-typedef struct _settings_item_t
-{
-	DWORD menu;
-	DWORD pos;
-	BOOL  negate;
-} settings_item_t;
-
-const settings_item_t settings[] = 
-{
-	{CHBX_MSCRT,   0, FALSE},
-	{CHBX_DX,      1, FALSE},
-	{RAD_NORMAL,   2, FALSE},
-	{CHBX_WINE,    3, FALSE},
-	{CHBX_GLIDE,   4, FALSE},
-	{CHBX_SIMD95,  5, FALSE},
-	{CHBX_FIXES,   6, FALSE},
-	{BTN_ABOUT,    7, FALSE},
-	{CHBX_GL95,    8, FALSE},
-	{CHBX_QXGA,    9, TRUE},
-	{CHBX_1440,   10, TRUE},
-	{CHBX_4K,     11, TRUE},
-	{CHBX_5K,     12, TRUE},
-	{0, 0, FALSE}
-};
-
-DWORD settings_data = 0;
-
-#define DPIX(_spx) ((int)(ceil((_spx)*rdpiX)))
-#define DPIY(_spx) ((int)(ceil((_spx)*rdpiY)))
-
-#define DEFAULT_INST_PATH "C:\\drivers\\softgpu"
-
-#define DRAW_START_X 16
-#define DRAW_START_Y 10
-#define LINE_HEIGHT 20
-#define LINE_HL     10
-#define LINE_WIDTH  250
-#define LINE_QWIDTH  80
-
-#define LINE_WIDTH2  350
-
-version_t WINVER95 = {4,0,0,0};
-version_t WINVER98 = {4,10,0,0};
-version_t WINVER98SE = {4,10,2222,0};
-version_t WINVERME = {4,90,0,0};
-version_t WINVER2K = {5,0,0,0};
-
-static BOOL isNT    = FALSE;
+BOOL isNT    = FALSE;
 version_t sysver = {0};
-static version_t dxver  = {0};
-static BOOL     hasCRT = FALSE;
-static BOOL     hasSETUPAPI = FALSE;
-static uint32_t hasSSE = 0;
-static uint32_t hasAVX = 0;
-static BOOL     hasOpengl = FALSE;
+version_t dxver  = {0};
+BOOL     hasCRT = FALSE;
+BOOL     hasSETUPAPI = FALSE;
+uint32_t hasSSE3 = 0;
+uint32_t hasSSE42 = 0;
+uint32_t hasAVX = 0;
+BOOL     hasOpengl = FALSE;
+
+BOOL     reinstall_dx = FALSE;
+
 static DWORD    drvPCstatus = CHECK_DRV_OK;
 
-static char sysinfomsg[1024];
+char sysinfomsg[1024];
 
-static BOOL isSettingSet(DWORD menu)
+
+BOOL checkDXReinstall()
 {
-	const settings_item_t *s;
-	for(s = &settings[0]; s->menu != 0; s++)
+	char syspath[MAX_PATH];
+	size_t syspath_len;
+	
+	if(GetSystemDirectoryA(syspath, MAX_PATH) == 0)
 	{
-		if(s->menu == menu)
+		return FALSE;
+	}
+	syspath_len = strlen(syspath);
+	
+	strcat(syspath, "\\ddraw.dll");
+	if(is_wrapper(syspath, FALSE))
+	{
+		strcpy(syspath+syspath_len, "\\ddsys.dll");
+		if(is_wrapper(syspath, TRUE))
 		{
-			DWORD p = ((settings_data) >> s->pos) & 0x1;
-			if(s->negate)
-			{
-				p = (~p) & 0x1;
-			}
-				
-			if(p == 0)
+			return TRUE;
+		}
+	}
+	
+	strcpy(syspath+syspath_len, "\\d3d8.dll");
+	if(is_wrapper(syspath, FALSE))
+	{
+		strcpy(syspath+syspath_len, "\\msd3d8.dll");
+		if(is_wrapper(syspath, TRUE))
+		{
+			return TRUE;
+		}
+	}
+	
+	if(version_compare(&sysver, &WINVER98) >= 0)
+	{
+		strcpy(syspath+syspath_len, "\\d3d9.dll");
+		if(is_wrapper(syspath, FALSE))
+		{
+			strcpy(syspath+syspath_len, "\\msd3d9.dll");
+			if(is_wrapper(syspath, TRUE))
 			{
 				return TRUE;
-			}
-			else
-			{
-				return FALSE;
 			}
 		}
 	}
 	
 	return FALSE;
-}
-
-static void writeSettings(HWND hwnd)
-{
-	const settings_item_t *s;
-	
-	DWORD new_data = 0;
-	
-	for(s = &settings[0]; s->menu != 0; s++)
-	{
-		BOOL b = IsDlgButtonChecked(hwnd, s->menu);
-		if(s->negate) b = !b;
-		
-		if(!b)
-		{
-			new_data |= 1 << s->pos;
-		}
-	}
-	
-	registryWriteDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup", new_data);
 }
 
 void readCPUInfo()
@@ -250,24 +218,29 @@ void readCPUInfo()
 	{
 		__asm(
 			"pusha\n"
+			"movl $0, %0\n"
+			"movl $0, %1\n"
 			"xorl %%eax, %%eax\n"
 			"cpuid\n"
 			"cmpl $1, %%eax\n"             // does CPUID support eax = 1?
-			"jb not_supported_sse\n"
+			"jb end_sse\n"
 			"movl $1, %%eax\n"
 			"cpuid\n"
 			"andl $0x06000000, %%edx\n"   // check 25 and 26 - SSE and SSE2
 			"cmpl $0x06000000, %%edx\n" 
-			"jne not_supported_sse\n"
-			"andl $0x00180001, %%ecx\n"   // check 0, 19, 20 - SSE3 and SSE4.1 SSE4.2
-			"cmpl $0x00180001, %%ecx\n"
-			"jne not_supported_sse\n"
+			"jne end_sse\n"
+			"mov %%ecx, %%eax\n"
+			"andl $0x00000001, %%eax\n"   // check 0 - SSE3
+			"cmpl $0x00000001, %%eax\n"
+			"jne end_sse\n" // SSE1, SSE2, SSE3
 			"movl $1, %0\n"
+			"andl $0x00180000, %%ecx\n"   // check 19, 20 - SSE3 and SSE4.1 SSE4.2
+			"cmpl $0x00180000, %%ecx\n"
+			"jne end_sse\n" // SSE4.1, SSE4.2
+			"movl $1, %1\n"
 			"jmp end_sse\n"
-			"not_supported_sse:\n"
-			"movl $0, %0\n"
 			"end_sse:\n"
-			"popa" : "=m" (hasSSE));
+			"popa" : "=m" (hasSSE3), "=m" (hasSSE42));
 	}
 	else
 	{
@@ -292,7 +265,7 @@ void readCPUInfo()
 			"not_supported_sse95:\n"
 			"movl $0, %0\n"
 			"end_sse95:\n"
-			"popa" : "=m" (hasSSE));
+			"popa" : "=m" (hasSSE3));
 	}
   
 }
@@ -325,10 +298,9 @@ void softgpu_sysinfo()
 	
 	readCPUInfo();
 	
-	//hasSSE2 = __builtin_cpu_supports("sse2") > 0;
-	//hasAVX = __builtin_cpu_supports("avx") > 0;
-	
-	sprintf(sysinfomsg, "System informations:\n"
+	reinstall_dx = checkDXReinstall();
+		
+	sprintf(sysinfomsg,
 		"System version: %d.%d.%d.%d\n"
 		"Core type: %s\n"
 		"DX version: %d.%d.%d.%d\n"
@@ -343,15 +315,15 @@ void softgpu_sysinfo()
 		hasCRT ? "yes" : "no",
 		hasSETUPAPI ? "yes" : "no",
 		hasOpengl ? "yes" : "no",
-		hasSSE ? "yes" : "no",
+		hasSSE42 ? "4.2" : (hasSSE3 ? "3" : "no"),
 		hasAVX  ? "yes" : "no"
 	);
 }
 
 
-static HWND infobox = INVALID_HANDLE_VALUE;
-static HWND installbtn = INVALID_HANDLE_VALUE;
-static HWND pathinput = INVALID_HANDLE_VALUE;
+HWND infobox = INVALID_HANDLE_VALUE;
+HWND installbtn = INVALID_HANDLE_VALUE;
+HWND pathinput = INVALID_HANDLE_VALUE;
 
 static BOOL need_reboot = FALSE;
 
@@ -435,266 +407,28 @@ void softgpu_browse(HWND hwnd)
 	}
 }
 
+int GetInputInt(HWND hwnd, int id)
+{
+	HWND el = GetDlgItem(hwnd, id);
+	if(el)
+	{
+		char inp[64];
+		if(GetWindowTextA(el, inp, 64) != 0)
+		{
+			return strtol(inp, NULL, 0);
+		}
+	}
+	
+	return 0;
+}
+
 LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static char dxname[250];
-	
 	switch(msg)
 	{
 		case WM_CREATE:
 		{
-			version_t dxtarget;
-			DWORD sty;
-			
-			if(version_compare(&sysver, &WINVER98) >= 0)
-			{
-				version_parse(iniValue("[softgpu]", "dx9target"), &dxtarget);
-				strcpy(dxname, "Install DirectX 9");
-			}
-			else
-			{
-				version_parse(iniValue("[softgpu]", "dx8target"), &dxtarget);
-				strcpy(dxname, "Install DirectX 8");
-			}
-			
-			/*CreateWindowA("BUTTON", iename,
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 0*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_IE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(!hasSETUPAPI)
-			{
-				CheckDlgButton(hwnd, CHBX_IE, BST_CHECKED);
-			}*/
-			
-			HWND btnGL = CreateWindowA("BUTTON", "Install OpenGL 95",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 0*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_GL95, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(version_compare(&sysver, &WINVER98) < 0)
-			{
-				if(!hasOpengl)
-				{
-					if(isSettingSet(CHBX_GL95))
-					{
-						CheckDlgButton(hwnd, CHBX_GL95, BST_CHECKED);
-					}
-				}
-			}
-			else
-			{
-				sty = GetWindowLongA(btnGL, GWL_STYLE) | WS_DISABLED;
-				SetWindowLongA(btnGL, GWL_STYLE, sty);
-			}
-			
-			CreateWindowA("BUTTON", "Install MSVCRT",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 1*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_MSCRT, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(!hasCRT)
-			{
-				if(isSettingSet(CHBX_MSCRT))
-				{
-					CheckDlgButton(hwnd, CHBX_MSCRT, BST_CHECKED);
-				}
-			}
-			
-			/* directx checkbox */			
-			CreateWindowA("BUTTON", dxname,
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 2*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_DX, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(version_compare(&dxver, &dxtarget) < 0)
-			{
-				if(isSettingSet(CHBX_DX))
-				{
-					CheckDlgButton(hwnd, CHBX_DX, BST_CHECKED);
-				}
-			}
-			
-			/* SSE/non SSE instalation type */
-			CreateWindowA("BUTTON", "Install classical binaries",
-				WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON | WS_GROUP,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + LINE_HL + 3*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)RAD_NORMAL, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-
-			CreateWindowA("BUTTON", "Install SSE instrumented binaries",
-				WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + LINE_HL + 4*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)RAD_SSE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-				
-			if(version_compare(&sysver, &WINVER98) >= 0 && hasSSE)
-			{
-				CheckDlgButton(hwnd, RAD_SSE, BST_CHECKED);
-			}
-			else
-			{
-				CheckDlgButton(hwnd, RAD_NORMAL, BST_CHECKED);
-			}
-			
-			CreateWindowA("BUTTON", "Install DirectX wrapper (Wine9x)",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + LINE_HL + 5*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_WINE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(isSettingSet(CHBX_WINE))
-			{
-				CheckDlgButton(hwnd, CHBX_WINE, BST_CHECKED);
-			}
-			
-			CreateWindowA("BUTTON", "Install Glide wrapper (OpenGlide9x)",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + LINE_HL + 6*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_GLIDE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(isSettingSet(CHBX_GLIDE))
-			{
-				CheckDlgButton(hwnd, CHBX_GLIDE, BST_CHECKED);
-			}
-			
-			HWND btnSIMD95 = CreateWindowA("BUTTON", "Enable SSE/AVX hack",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + LINE_HL + 7*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_SIMD95, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(version_compare(&sysver, &WINVERME) < 0)
-			{
-#if 0
-				if(!hasAVX)
-				{
-					if(isSettingSet(CHBX_SIMD95))
-					{
-						CheckDlgButton(hwnd, CHBX_SIMD95, BST_CHECKED);
-					}
-				}
-#endif
-			}
-			else
-			{
-				sty = GetWindowLongA(btnSIMD95, GWL_STYLE) | WS_DISABLED;
-				SetWindowLongA(btnSIMD95, GWL_STYLE, sty);
-			}
-			
-			CreateWindowA("BUTTON", "Apply compatibility enhacements",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + LINE_HL + 8*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_FIXES, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(isSettingSet(CHBX_FIXES))
-			{
-				CheckDlgButton(hwnd, CHBX_FIXES, BST_CHECKED);
-			}
-			
-			CreateWindowA("STATIC", "Resolutions > FullHD:",
-				WS_VISIBLE | WS_CHILD | SS_LEFT,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 10*LINE_HEIGHT), DPIX(LINE_QWIDTH*2), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			
-			CreateWindowA("BUTTON", "QXGA",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP,
-				DPIX(DRAW_START_X+2*LINE_QWIDTH), DPIY(DRAW_START_Y + 10*LINE_HEIGHT), DPIX(LINE_QWIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_QXGA, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(isSettingSet(CHBX_QXGA))
-			{
-				CheckDlgButton(hwnd, CHBX_QXGA, BST_CHECKED);
-			}
-			
-			CreateWindowA("BUTTON", "1440p",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X+3*LINE_QWIDTH), DPIY(DRAW_START_Y + 10*LINE_HEIGHT), DPIX(LINE_QWIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_1440, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(isSettingSet(CHBX_1440))
-			{
-				CheckDlgButton(hwnd, CHBX_1440, BST_CHECKED);
-			}
-			
-			CreateWindowA("BUTTON", "4K",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X+4*LINE_QWIDTH), DPIY(DRAW_START_Y + 10*LINE_HEIGHT), DPIX(LINE_QWIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_4K, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(isSettingSet(CHBX_4K))
-			{
-				CheckDlgButton(hwnd, CHBX_4K, BST_CHECKED);
-			}
-				
-			CreateWindowA("BUTTON", "5K",
-				WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-				DPIX(DRAW_START_X+5*LINE_QWIDTH), DPIY(DRAW_START_Y + 10*LINE_HEIGHT), DPIX(LINE_QWIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)CHBX_5K, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			if(isSettingSet(CHBX_5K))
-			{
-				CheckDlgButton(hwnd, CHBX_5K, BST_CHECKED);
-			}
-			
-			CreateWindowA("STATIC", "Install path:",
-				WS_VISIBLE | WS_CHILD | SS_LEFT | WS_GROUP,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 12*LINE_HEIGHT), DPIX(LINE_WIDTH), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			
-			pathinput = CreateWindowA("EDIT", iniValue("[softgpu]", "defpath"),
-				WS_VISIBLE | WS_CHILD | ES_LEFT | WS_BORDER | WS_GROUP | WS_TABSTOP,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + 13*LINE_HEIGHT), DPIX(LINE_WIDTH2), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)INP_PATH, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			
-			CreateWindowA("BUTTON", "Browse",
-				WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON | WS_GROUP,
-				DPIX(DRAW_START_X+LINE_WIDTH2+10), DPIY(DRAW_START_Y + 13*LINE_HEIGHT), DPIX(80), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)BTN_BROWSE, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			
-			CreateWindowA("BUTTON", "Exit",
-				WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON | WS_GROUP | WS_TABSTOP,
-				DPIX(DRAW_START_X), DPIY(DRAW_START_Y + LINE_HL + 14*LINE_HEIGHT), DPIX(80), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)BTN_EXIT, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-
-			if(!isNT)
-			{
-				installbtn = CreateWindowA("BUTTON", "Install!",
-					WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | WS_GROUP | WS_TABSTOP,
-					DPIX(DRAW_START_X+LINE_WIDTH2+10), DPIY(DRAW_START_Y + LINE_HL + 14*LINE_HEIGHT), DPIX(80), DPIY(LINE_HEIGHT),
-					hwnd, (HMENU)BTN_INSTALL, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-				SetFocus(installbtn);
-			}
-			else
-			{
-				CreateWindowA("BUTTON", "Install!",
-					WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON | WS_DISABLED,
-					DPIX(DRAW_START_X+LINE_WIDTH2+10), DPIY(DRAW_START_Y + LINE_HL + 14*LINE_HEIGHT), DPIX(80), DPIY(LINE_HEIGHT),
-					hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			}
-			
-#ifdef EXTRA_INFO
-			CreateWindowA("STATIC", EXTRA_INFO,
-				WS_VISIBLE | WS_CHILD | SS_RIGHT | WS_DISABLED,
-				DPIX(DRAW_START_X+LINE_WIDTH+10), DPIY(DRAW_START_Y-5 + 0*LINE_HEIGHT), DPIX(200), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-#endif
-			
-			CreateWindowA("STATIC", sysinfomsg,
-				WS_VISIBLE | WS_CHILD | SS_LEFT | WS_BORDER,
-				DPIX(DRAW_START_X+LINE_WIDTH+10), DPIY(DRAW_START_Y + 1*LINE_HEIGHT), DPIX(200), DPIY(8*LINE_HEIGHT),
-				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-
-			CreateWindowA("BUTTON", "About",
-				WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
-				DPIX(DRAW_START_X+LINE_WIDTH2+10), DPIY(DRAW_START_Y + LINE_HL + 11*LINE_HEIGHT), DPIX(80), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)BTN_ABOUT, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-
-			infobox = CreateWindowA("STATIC", "https://github.com/JHRobotics/softgpu",
-				WS_VISIBLE | WS_CHILD | SS_CENTER,
-				DPIX(DRAW_START_X+80+10), DPIY(DRAW_START_Y + LINE_HL +14*LINE_HEIGHT), DPIX(LINE_WIDTH2-80-10), DPIY(LINE_HEIGHT),
-				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			
-			if(version_compare(&sysver, &WINVER98) >= 0)
-			{
-				CreateWindowA("BUTTON", "Don't install driver, only copy files",
-					WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX,
-					DPIX(DRAW_START_X+80+10), DPIY(DRAW_START_Y + 16*LINE_HEIGHT), DPIX(LINE_WIDTH2-80-10), DPIY(LINE_HEIGHT),
-					hwnd, (HMENU)CHBX_NO_INSTALL, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-			}
-			else
-			{
-				CreateWindowA("BUTTON", "Don't install driver, only copy files",
-					WS_VISIBLE | WS_CHILD | BS_AUTOCHECKBOX | WS_DISABLED,
-					DPIX(DRAW_START_X+80+10), DPIY(DRAW_START_Y + 16*LINE_HEIGHT), DPIX(LINE_WIDTH2-80-10), DPIY(LINE_HEIGHT),
-					hwnd, (HMENU)CHBX_NO_INSTALL, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-				CheckDlgButton(hwnd, CHBX_NO_INSTALL, BST_CHECKED);
-			}
-			
+			softgpu_window_create(hwnd, lParam);
 			break;
 		}
 		case WM_COMMAND:
@@ -762,7 +496,11 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 					}
 #endif
 					
-					if(IsDlgButtonChecked(hwnd, RAD_SSE))
+					if(IsDlgButtonChecked(hwnd, RAD_SSE4))
+					{
+						setInstallSrc(iniValue("[softgpu]", "drvpath.sse4"));
+					}
+					else if(IsDlgButtonChecked(hwnd, RAD_SSE))
 					{
 						setInstallSrc(iniValue("[softgpu]", "drvpath.sse"));
 					}
@@ -771,15 +509,27 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 						setInstallSrc(iniValue("[softgpu]", "drvpath"));
 					}
 					
-					install_wine  = IsDlgButtonChecked(hwnd, CHBX_WINE);
-					install_glide = IsDlgButtonChecked(hwnd, CHBX_GLIDE);
+					install_settings.install_wine  = IsDlgButtonChecked(hwnd, CHBX_WINE);
+					install_settings.install_glide = IsDlgButtonChecked(hwnd, CHBX_GLIDE);
 					
-					install_res_qxga = IsDlgButtonChecked(hwnd, CHBX_QXGA);
-					install_res_1440 = IsDlgButtonChecked(hwnd, CHBX_1440);
-					install_res_4k   = IsDlgButtonChecked(hwnd, CHBX_4K);
-					install_res_5k   = IsDlgButtonChecked(hwnd, CHBX_5K);
+					install_settings.install_res_qxga = IsDlgButtonChecked(hwnd, CHBX_QXGA);
+					install_settings.install_res_1440 = IsDlgButtonChecked(hwnd, CHBX_1440);
+					install_settings.install_res_4k   = IsDlgButtonChecked(hwnd, CHBX_4K);
+					install_settings.install_res_5k   = IsDlgButtonChecked(hwnd, CHBX_5K);
+					
+					install_settings.bug_rgb565       = IsDlgButtonChecked(hwnd, CHBX_BUG_RGB565);
+					install_settings.bug_prefer_fifo  = IsDlgButtonChecked(hwnd, CHBX_BUG_PREFER_FIFO);
+					install_settings.bug_dx_flags     = IsDlgButtonChecked(hwnd, CHBX_BUG_DX_FLAGS);
+					
+					install_settings.dd_set_system    = IsDlgButtonChecked(hwnd, RAD_DD_HAL);
+					install_settings.d8_set_nine      = IsDlgButtonChecked(hwnd, RAD_D8_NINE);
+					install_settings.d9_set_nine      = IsDlgButtonChecked(hwnd, RAD_D9_NINE);
+					
+					install_settings.vram_limit = GetInputInt(hwnd, INP_VRAM_LIMIT);
+					install_settings.gmr_limit  = GetInputInt(hwnd, INP_GMR_LIMIT);
 					
 					action_create("Files copy", filescopy_start, filescopy_wait, filescopy_result);
+					//action_create("Copy system files", );
 					action_create("Modify inf", infFixer, NULL, NULL);
 					
 					if(hasSETUPAPI && version_compare(&sysver, &WINVER98) >= 0)
@@ -797,6 +547,8 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 					{
 						action_create("Driver installation", driver_without_setupapi, NULL, NULL);
 					}
+					
+					action_create("Configure wrappers", winenine, NULL, NULL);
 					
 					if(IsDlgButtonChecked(hwnd, CHBX_FIXES))
 					{
@@ -828,6 +580,39 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 						}
 					}
 					break;
+				case BTN_SYSINFO:
+					sysinfo(hwnd);
+					break;
+				case BTN_WGLTEST:
+					runprog("tools\\wgltest.exe");
+					break;
+				case BTN_GLCHECKER:
+					runprog("tools\\glchecker.exe");
+					break;
+				case BTN_README:
+				{
+					char url[MAX_PATH] = "file:///";
+					size_t len = strlen(url);
+					size_t i;
+					
+					GetCurrentDirectory(MAX_PATH-len, url+len);
+					len = strlen(url);
+					for(i = 0; i < len; i++)
+					{
+						if(url[i] == '\\')
+							url[i] = '/';
+					}
+					strcat(url, "/softgpu.htm");
+					
+					softgpu_browser(url);
+					
+					break;
+				}
+				case BTN_DEFAULTS:
+					void settingsReset();
+					softgpu_set(hwnd);
+					break;
+				
 			} // switch(wParam)
 			break;
 		}
@@ -859,10 +644,7 @@ LRESULT CALLBACK softgpuLoadingProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	{
 		case WM_CREATE:
 		{
-			CreateWindowA("STATIC", "Inspecting system...\n\nPlease stand by!",
-				WS_VISIBLE | WS_CHILD | SS_CENTER,
-				DPIX(0), DPIY(80), DPIX(400), DPIY(LINE_HEIGHT*3),
-				hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
+			softgpu_loading_create(hwnd, lParam);
 			break;
 		}
 		case WM_DESTROY:
@@ -873,12 +655,18 @@ LRESULT CALLBACK softgpuLoadingProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
+#ifdef EXTRA_INFO
+#define WINDOW_TITLE "SoftGPU setup - " SOFTGPU_STR(EXTRA_INFO)
+#else
+#define WINDOW_TITLE "SoftGPU setup"
+#endif
+
 DWORD WINAPI softgpuLoadingThread(LPVOID lpParameter)
 {
 	MSG msg;
 	(void)lpParameter;
 	
-	HWND win_loading = CreateWindowA(WND_SOFTGPU_LOAD_CLASS_NAME, "SoftGPU setup", WS_TILED|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(400), DPIY(250), 0, 0, NULL, 0);
+	HWND win_loading = CreateWindowA(WND_SOFTGPU_LOAD_CLASS_NAME, WINDOW_TITLE, WS_TILED|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(400), DPIY(250), 0, 0, NULL, 0);
 	
 	while(GetMessage(&msg, NULL, 0, 0))
   {
@@ -939,8 +727,8 @@ int main(int argc, const char *argv[])
 	
 	DWORD threadId;
 	HANDLE win_loading_th = CreateThread(NULL, 0, softgpuLoadingThread, NULL, 0, &threadId);
-		
-	registryReadDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup", &settings_data);
+	
+	readSettings();
 
   hasSETUPAPI = loadSETUAPI();
   if(hasSETUPAPI)
@@ -949,7 +737,7 @@ int main(int argc, const char *argv[])
   }
   
   softgpu_sysinfo();
-  
+    
   if(win_loading_th != INVALID_HANDLE_VALUE)
   {
 		/* destroy loading window */
@@ -973,7 +761,7 @@ int main(int argc, const char *argv[])
 	wc.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
 	wc.hCursor       = LoadCursor(0, IDC_ARROW);
 	wc.hIcon         = LoadIconA(hInst, MAKEINTRESOURCE(SOFTGPU_ICON1));
-	wc_loading.hInstance     = hInst;
+	wc.hInstance     = hInst;
 
 	RegisterClass(&wc);
 	
@@ -992,7 +780,7 @@ int main(int argc, const char *argv[])
 		ReleaseDC(NULL, hdc);
 	}
 	
-	HWND win = CreateWindowA(WND_SOFTGPU_CLASS_NAME, "SoftGPU setup", WS_OVERLAPPEDWINDOW|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(512), DPIY(390), 0, 0, NULL, 0);
+	HWND win = CreateWindowA(WND_SOFTGPU_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(600), DPIY(420), 0, 0, NULL, 0);
 	
 	if(isNT)
 	{
@@ -1022,13 +810,19 @@ int main(int argc, const char *argv[])
 		timer_proc(win);
 	}
 	
+	if(reinstall_dx)
+	{
+		MessageBoxA(win, "Some DirectX files were modified by previous SoftGPU installation or other wrapper. It is recommended to install DirectX redistributable again!", "DX redistributable", MB_OK);
+	}
+	
   while(GetMessage(&msg, NULL, 0, 0))
   {
-  	if (IsDialogMessage(win, &msg))
+  	/*if(IsDialogMessageA(win, &msg))
   	{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
-		}
+		}*/
+		IsDialogMessageA(win, &msg);
   }
   
   DestroyWindow(win);

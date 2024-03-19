@@ -5,13 +5,17 @@ OBJ_SUFFIX = .o
 EXE_NAME = softgpu
 EXE_SUFFIX = .exe
 LDFLAGS=-static
-LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lsetupapi -lkernel32 -lshell32 -Wl,-subsystem,windows
-#LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lsetupapi -lkernel32 -lshell32 -Wl,-subsystem,console
+LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,windows
+#LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,console
 
-SOFTGPU_PATCH=2023
+SOFTGPU_PATCH=2024
 
 ifdef EXTRA_INFO
-CFLAGS += -DEXTRA_INFO="\"$(EXTRA_INFO)\""
+CFLAGS += -DEXTRA_INFO="$(EXTRA_INFO)"
+endif
+
+ifdef EXTRA_ICO
+RES_FLAGS += -DEXTRA_ICO="$(EXTRA_ICO)"
 endif
 
 NULLOUT=$(if $(filter $(OS),Windows_NT),NUL,/dev/null)
@@ -34,7 +38,10 @@ SOURCES = \
   winini.c \
   windrv.c \
   winreg.c \
+  winres.c \
   setuperr.c \
+  window.c \
+  settings.c \
   resource/softgpu.rc
   
 

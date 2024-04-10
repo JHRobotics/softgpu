@@ -42,16 +42,16 @@ SoftGPU can use 4 render drivers:
 Not all renderers supporting all application/games, performance expectation is in 1024x768 32bit:
 
 
-| Renderer            | Requirements   | OpenGL version | DX9  | DX9 shaders | DX8  | DX8 shaders | DX6-7 | OpenGL | multiple contexts | window mode | Glide | Glide DOS | Expected FPS |
-| :------------------ | :------------: | :------------: | :--: | :---------: | :--: | :---------: | :---: | :----: | :---------------: | :---------: | :---: | :-------: | :----------: |
-| softpipe            |      -         |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔               |  ✔         |  ✔   |    ❌     |    1-3       |
-| llvmlipe (128 bits) |     SSE        |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔               |  ✔         |  ✔   |    ❌     |    10-15     |
-| llvmlipe (256 bits) |   SSE, AVX     |     3.3        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔               |  ✔         |  ✔   |    ❌     |    12-20     |
-| SVGA3D              | SVGA-II (gen9) |     2.1        |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |  ⚠               |  ✔         |  ✔   |    ❌     |    30-60     |
-| SVGA3D              | SVGA-II (gen10)|     4.1        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |  ✔               |  ✔         |  ✔   |    ❌     |    35-80     |
-| qemu-3dfx           | [qemu-3dfx](https://github.com/kjliew/qemu-3dfx) |     native        |  ✔  |      ✔     |  ✔               |  ✔         |   ✔  |      ✔     |  ❌   |   ❌   |  ✔ *   |    ✔ *     |    native/2 *  |
+| Renderer            | Guest Requirements   | DX9  | DX9 shaders | DX8  | DX8 shaders | DX6-7 | OpenGL | OpenGL version | multiple contexts | window mode | Glide | Glide DOS | Expected FPS |
+| :------------------ | :------------: | :--: | :---------: | :--: | :---------: | :---: | :----: | :------------: | :---------------: | :---------: | :---: | :-------: | :----------: |
+| softpipe            |      -         |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    1-3       |
+| llvmlipe (128 bits) |     SSE        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    10-15     |
+| llvmlipe (256 bits) |   SSE, AVX     |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    12-20     |
+| SVGA3D              | SVGA-II (gen9) |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |     2.1        |  ⚠               |  ✔         |  ✔   |    ❌     |    30-60     |
+| SVGA3D              | SVGA-II (gen10)|  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     4.1        |  ✔               |  ✔         |  ✔   |    ❌     |    35-80     |
+| qemu-3dfx           | [qemu-3dfx](https://github.com/kjliew/qemu-3dfx) |  ✔  |      ✔     |  ✔               |  ✔         |   ✔  |      ✔     |     native        |  ❌   |   ❌   |  ✔ *   |    ✔ *     |    native/2 *  |
 
-Note for qemu-3dfx: performance depends on CPU emulation - you can reach about 1/2 of native GPU performance when using KVM acceleration on x86-64 host, about 1/5 when using Hyper-V, and about from 1/100 when is using accelerated emulation and about 1/1000 when using full emulation. DOS Glide and *native* Glide wrapper isn't part of SoftGPU. You have to compile it from source or you can [donate qemu-3dfx author](https://github.com/kjliew/qemu-3dfx#donation).
+(*) Note for qemu-3dfx: performance depends on CPU emulation - you can reach about 1/2 of native GPU performance when using KVM acceleration on x86-64 host, about 1/5 when using Hyper-V, and about from 1/100 when is using accelerated emulation and about 1/1000 when using full emulation. DOS Glide and *native* Glide wrapper isn't part of SoftGPU. You have to compile it from source or you can [donate qemu-3dfx author](https://github.com/kjliew/qemu-3dfx#donation).
 
 
 Hypervisor translation to real HW GPU:

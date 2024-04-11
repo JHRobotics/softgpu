@@ -604,8 +604,48 @@ void backup_sysfiles()
 			}
 		}
 	}
+}
+
+BOOL voodoo_copy(HWND hwnd)
+{
+	(void)hwnd;
 	
+	char srcpath[MAX_PATH];
+	char dstpath[MAX_PATH];
+	const char *drv_voodoo = iniValue("[softgpu]", "voodoo2path");
+	const char *f;
+	int i;
 	
+	const char *voodoo_files[] = {
+		"\\3dfxSpl2.dll",
+		"\\3dfxSpl3.dll",
+		"\\3dfxVGL.dll",
+		NULL
+	};
+	
+	if(drv_voodoo == NULL)
+	{
+		REPORT("Failed to get source path to Voodoo driver");
+		return FALSE;
+	}
+	
+	strcpy(dstpath, install_path);
+	strcat(dstpath, "\\3dfx");
+	mkdir_recrusive(dstpath);
+	
+	for(i = 0; (f = voodoo_files[i]) != NULL; i++)
+	{
+		strcpy(dstpath, install_path);
+		strcat(dstpath, "\\3dfx");
+		strcat(dstpath, f);
+		
+		strcpy(srcpath, drv_voodoo);
+		strcat(srcpath, f);
+		
+		CopyFileA(srcpath, dstpath, FALSE);
+	}
+	
+	return TRUE;
 }
 
 DWORD WINAPI filescopy_proc(LPVOID lpParameter)
@@ -935,7 +975,24 @@ BOOL setLineSyscopy(char *buf, size_t bufs)
 	return TRUE;
 }
 
-
+BOOL setLine3DFX(char *buf, size_t bufs)
+{
+	(void)bufs;
+	
+	if(install_settings.install_3dfx)
+	{
+		int line_start = sizeof(";3dfx:")-1;
+		int line_len  = strlen(buf);
+		int i;
+			
+		for(i = 0; i < line_len - line_start + 1; i++)
+		{
+			buf[i] = buf[i + line_start];
+		}
+	}
+	
+	return TRUE;
+}
 
 linerRule_t infFixRules[] = {
 	{"CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",   TRUE, TRUE, setLineVbox},
@@ -951,6 +1008,7 @@ linerRule_t infFixRules[] = {
 	{"HKLM,Software\\VMWSVGA,VRAMLimit,,128",                   TRUE, TRUE, setLimitVRAM},
 	{";mefix:",                                                FALSE, TRUE, setLineMeFix},
 	{";syscopy:",                                              FALSE, TRUE, setLineSyscopy},
+	{";3dfx:",                                                 FALSE, TRUE, setLine3DFX},
 	{NULL, FALSE, FALSE, NULL}
 };
 

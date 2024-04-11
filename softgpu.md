@@ -147,6 +147,25 @@ Since Nine supporting only, DX9 there is wrapper to translate DX8 to DX9. It is 
 
 This wrapper is translating 3Dfx Glide to OpenGL. Currently is supported only Glide2x and Glide3x. This wrapper isn't ideal but I making slowly progress. Glide for DOS is not supported and support is not planed. You can use DOS Glide with [QEMU-3Dfx](https://github.com/kjliew/qemu-3dfx), but binaries no included in SoftGPU package.
 
+#### MiniGL
+
+This wrapper was designed to translate OpenGL to (3DFX proprietary) Glide2 or Glide3 API. Usually used for Quake 2/3 engine based games. Since Voodoo 3 was abandoned to native OpenGL implementation. OpenGlide9x now supports these wrappers results OpenGL → Glide → OpenGL transport. But why to do this? There is 2 situations: 1st is fail-safe, so incorrect installation/setup (wrappers were parts of some distributions) can work somehow. 2nd is for games that will not work correctly with Mesa3D OpenGL implementation.
+
+**Usage**
+
+You need some original files:
+- Voodoo2 driver (V3.02.02), from [here](http://falconfly.3dfx.pl/minigl.htm) or [my mirror](https://files.emulace.cz/voodoo2-30202.zip)
+- 3dfx MiniGL (V1.49, from [here](http://falconfly.3dfx.pl/minigl.htm) or [my mirror](https://files.emulace.cz/minigl149.zip)
+
+From Voodoo2 driver copy `3dfxVGL.dll`, `3dfxSpl2.dll` and `3dfxSpl3.dll` to *WINDOWS/SYSTEM* folder. For games: (GL)Quake, Quake 2, Half Life, Heretic 2, Hexen 2 and Sin copy individual **.dll* from MiniGL archive to game directory (usually there is file with same name, overwrite it). I'm currently recommending to use MiniGL for these games:
+
+- Soldier of Fortune
+- Quake 2 (with vGPU10)
+- Sin (with vGPU10)
+- Heretic II (with vGPU10)
+
+For Quake 3 and RTCW is OpenGlide disabled, because it causes more problems than benefits.
+ 
 
 ### VRAM and GMR
 
@@ -161,9 +180,9 @@ In real VRAM are stored framebuffer, surfaces, textures, and buffers (on modern 
 
 But where the textures and rendering buffers stored? In something called Guest Memory Region, this is guest system RAM mapped to virtual GPU. vGPU9 stores in GMR working buffer + system memory mapped textures and GPU only mapped textures are in the host memory (in theory they can be in host VRAM only, but usually they are occupying both host RAM and VRAM). vGPU10 also stores GPU mapped textures in guest system RAM (and this RAM is mapped to real GPU, more or less effectively). So minimal application eats 64 MB memory (~32 MB runtime + 32 MB frame buffer), typical game eats about 128 MB for vGPU9 and 256 for vGPU10. Compressed textures are eating more space, then uncompressed, because you need store both compressed and unpacked variant. 16-bit frame buffer is larger than 32-bit, because all rendering operations are 32-bit and final version it's software blit to 16-bit.
 
-Some later game and 3DMark can eat all 512 MB of RAM. So that why is here GMR limitation, because if the driver (GMR allocation is done by RING-0 driver) eats all usable RAM, system freeze.
+Some later games and 3DMark can eat all 512 MB of RAM. So that why is here GMR limitation, because if the driver (GMR allocation is done by RING-0 driver) eats all usable RAM, system freeze.
 
-SoftGPU will limit VRAM to 128 MB and GMR to 128 MB for 512 MB system and for 256 if you have 768 MB RAM and more. These limits can be adjust by this registry keys:
+SoftGPU will limit VRAM to 128 MB and GMR to 160 MB for 512 MB system and for 256 MB if you have 768 MB RAM and more. These limits can be adjust by this registry keys:
 
 ```
 REGEDIT4
@@ -176,7 +195,7 @@ REGEDIT4
 "SVGA_GMR_LIMIT"="128"
 ```
 
-GMR limit can be configured per application, 128 MB is usually enough, but 3Dmark03 for example need about 256 MB to work correctly.
+GMR limit can be configured per application, 128 MB is usually enough, but 3Dmark03 for example need about 192 MB to work correctly.
 
 
 ## Registry configuration
@@ -363,5 +382,103 @@ REGEDIT4
 ; When you have working QEMU-3dfx this key enable
 ; ICD OpenGL driver
 "FORCE_QEMU3DFX"=dword:00000001
+
+```
+
+### OpenGlide
+
+```
+REGEDIT4
+
+
+[HKEY_LOCAL_MACHINE\Software\OpenGlide\Rayman2.exe]
+;
+; disable OpenGlide for some application
+; very useful if you wish ship glide usage
+; and continue for normal OpenGL
+"Disabled"="1"
+;
+; Enable the fog, this is broken now
+; but you can try it...
+"FogEnable"="1"
+;
+; Run game in window
+"InitFullScreen"="0"
+;
+; Convert all textures to ARGB8888 instead of
+; 16-bit types. Speeds up a bit sometimes.
+"Textures32bit"="1"
+;
+; Disable system cursor:
+; 0 - cursor present
+; 1 - cursor is disabled in glide window (default)
+; 2 - cursor is disabled in whole system when app running
+"HideCursor"="2"
+;
+; Disable 3DFX splash screen:
+; 0 - splash is disabled for good
+; 1 - always show splash screen, original 3DFX if
+;     there are presents `3dfxSpl2.dll` and `3dfxSpl3.dll`
+;     or OpenGlide build-in splash screen
+; 2 - show only original splash screen or nothing (default)
+"NoSplash"="0"
+;
+; Disable OpenGL vertical sync for OpenGL
+; some games cannot handle it and they're too fast
+;  0 - v-sync disabled
+;  1 - v-sync enabled (60 FPS, default)
+; -1 - v-sync adaptive (may not be supported)
+"SwapInterval"="0"
+;
+; Scale resolution
+; for example:
+; 2   - 800x600 => 1600x1200
+; 2.5 - 640x480 => 1600x1200
+; 
+"Resolution"="2"
+
+```
+
+You can also tune the configuration of Voodoo board
+
+```
+REGEDIT4
+
+
+[HKEY_LOCAL_MACHINE\Software\OpenGlide\global]
+;
+; Number of texture mapping units, default is 1
+; because on original HW both TMUs can be configure
+; differently, but OpenGlide not support that and 
+; only TMU#1 configuration is taken into account
+"NumTMU"="2"
+;
+; Type of Voodoo board:
+; -1 - auto selection (default)
+;  0 - Voodoo
+;  1 - Rush
+;  3 - Voodoo2
+;  4 - Banshee
+; Default is Voodoo 2 for Glide2x and Banshee for Glide3x API
+SSTType="3"
+;
+; Memory for one TMU in MB
+; default: 8
+"TextureMemorySize"="4"
+;
+; Memory for frame buffer in MB
+; 4  - max. resolution 800x600
+; 8  - max. resolution 1200x1024
+; 16 - max. resolution 1600x1200
+; default: 8
+; original cards had 4 or 8 MB of FB memory. If you need
+; large screen is better to scale resolution instead of
+; use more memory
+"FrameBufferMemorySize"="4"
+;
+; Note: OpenGlide architecture is most analogous to
+;       Voodoo Banshee - FB and TMUs are in same linear       
+;       memory space
+;
 
 ```

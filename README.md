@@ -47,8 +47,8 @@ Not all renderers supporting all application/games, performance expectation is i
 | softpipe            |      -         |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    1-3       |
 | llvmlipe (128 bits) |     SSE        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    10-15     |
 | llvmlipe (256 bits) |   SSE, AVX     |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    12-20     |
-| SVGA3D              | SVGA-II (gen9) |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |     2.1        |  ⚠               |  ✔         |  ✔   |    ❌     |    30-60     |
-| SVGA3D              | SVGA-II (gen10)|  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     4.1        |  ✔               |  ✔         |  ✔   |    ❌     |    35-80     |
+| SVGA3D              | SVGA-II (gen9) |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |     2.1        |  ⚠               |  ✔         |  ✔   |    ❌     |    30-100     |
+| SVGA3D              | SVGA-II (gen10)|  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    30-80     |
 | qemu-3dfx           | [qemu-3dfx](https://github.com/kjliew/qemu-3dfx) |  ✔  |      ✔     |  ✔               |  ✔         |   ✔  |      ✔     |     native        |  ❌   |   ❌   |  ✔ *   |    ✔ *     |    native/2 *  |
 
 (*) Note for qemu-3dfx: performance depends on CPU emulation - you can reach about 1/2 of native GPU performance when using KVM acceleration on x86-64 host, about 1/5 when using Hyper-V, and about from 1/100 when is using accelerated emulation and about 1/1000 when using full emulation. DOS Glide and *native* Glide wrapper isn't part of SoftGPU. You have to compile it from source or you can [donate qemu-3dfx author](https://github.com/kjliew/qemu-3dfx#donation).
@@ -85,6 +85,10 @@ General instruction for most machines:
 
 ## Update
 If you have an older version of SoftGPU installed, you can update without any problem: insert the CD with the latest version into the VM and click install. The installer will take care of all the necessary modifications, only to increase compatibility it is necessary to do some steps manually:
+
+**Update to version v0.5.2024.27**
+
+SVGA3D (especially vGPU10) is very memory consuming. Please consider to apply additional patches and set RAM to 1024 MB. Driver itself can cache memory allocation and it is faster when you have 1 GB RAM and more.
 
 **Update to version v0.5.2024.24**
 - *VirtualBox 7.0.x*: it is possible to turn on vGPU10:
@@ -163,7 +167,7 @@ There are 2 variant of graphical HW acceleration in VirtualBox 7:
 
 **vGPU9** (9 from DirectX 9) is older variant used usually to accelerate Windows Vista/7 aero and some desktop application. On host system is drawing by DirectX 9 (Windows) or OpenGL (Linux/Mac OS). Problem is very low pixel/vertex shader support, so DirectX 8 and DirectX 9 games can't use shaders. Keep on mind that DirectX in SoftGPU is emulated by Wine, so some non-shaders applications can have problems, because some behaviour is emulated by shaders.
 
-**vGPU10** (10 from Windows 10) is newer variant and is intended for acceleration of DirectX 12 (and DirectX 12 can emulate all older DirectX API). On host system is drawing by DirectX 12 (on Linux is translated by **dxvk** to Vulkan). Main problem is a relatively large amount of bugs ([see  summary  here](https://www.virtualbox.org/ticket/21515)). vGPU10 don't work well with SoftGPU 0.4.x releases, but SoftGPU 0.5.x solved most of problem and now this is preferred variant.
+**vGPU10** (10 from Windows 10) is newer variant and is intended for acceleration of DirectX 12 (and DirectX 12 can emulate all older DirectX API). On host system is drawing by DirectX 12 (on Linux is translated by **dxvk** to Vulkan). Main problem is a relatively large amount of bugs ([see  summary  here](https://www.virtualbox.org/ticket/21515)). vGPU10 don't work well with SoftGPU 0.4.x releases, but SoftGPU 0.5.x solved most of problems ~and now this is preferred variant.~ vGPU9 is usually faster in DX6-8 application and width Quake 2 engine games (paradoxically vGPU10 is faster width Quake 3 engine games).
 
 Switch between vGPU9 and vGPU10:
 
@@ -182,7 +186,7 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVG
 VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVGA10" ""
 ```
 
-[^2]: OK, and there some bugs, so VirtualBox is using vGPU10 event on DX10 only GPUs, so result is usually nice black screen...
+[^2]: OK, and there some bugs, so VirtualBox is using vGPU10 even on DX10 only GPUs, so result is usually nice black screen...
 
 
 ### VMware Workstation setup with HW acceleration
@@ -339,7 +343,7 @@ Binaries in SoftGPU allows to override build signature registry keys. To check t
 Currently there are known these limitations:
 
 ### Vertex Shaders
-**Update for 0.5.x versions**: Vertex Shaders works on vGPUv10 (VirtualBox 7) and for qemu-3dfx. For vGPU9 (VMware, VirtualBox 6.1) are DirectX shaders disabled, so most of applications can use shader alternative (most of DX8 games and lost of DX9).
+**Update for 0.5.x versions**: Vertex Shaders works on vGPUv10 (VirtualBox 7) and for qemu-3dfx. For vGPU9 (VMware, VirtualBox 6.1) are DirectX shaders disabled, so most of applications can use shader alternative (most of DX8 games lots of DX9).
 
 ### Windows 95 support
 Windows 95 support is limited - SoftGPU works, but there lots of extra bugs will appear and if you haven't any special reasons for using Windows 95 use recommended Windows 98 Second edition instead.

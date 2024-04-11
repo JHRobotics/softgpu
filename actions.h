@@ -61,6 +61,7 @@ BOOL setup_end(HWND hwnd);
 BOOL driver_install(HWND hwnd);
 void setInstallPath(HWND input);
 void setInstallSrc(const char *path);
+BOOL voodoo_copy(HWND hwnd);
 
 BOOL gl95_start(HWND hwnd);
 
@@ -87,6 +88,7 @@ typedef struct _install_settings_t
 	BOOL has_sys_ddraw;
 	BOOL has_sys_d3d8;
 	BOOL has_sys_d3d9;
+	BOOL install_3dfx;
 } install_settings_t;
 
 extern install_settings_t install_settings;

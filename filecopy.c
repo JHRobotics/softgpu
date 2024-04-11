@@ -42,6 +42,11 @@ BOOL is_dir(const char *path)
 	return FALSE;
 }
 
+BOOL is_file(const char *path)
+{
+	DWORD atrs = GetFileAttributesA(path);
+  return atrs != INVALID_FILE_ATTRIBUTES && (atrs & FILE_ATTRIBUTE_DIRECTORY) == 0;
+}
 
 BOOL mkdir_recrusive(const char *path)
 {

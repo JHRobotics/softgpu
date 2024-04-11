@@ -263,7 +263,49 @@ void softgpu_set(HWND hwnd)
 		SetWindowTextA(inp_gmr, tmplabel);
 	}
 	
+	// 3DFX
+	BOOL have_3dfx = FALSE;
+	const char *drv_voodoo = iniValue("[softgpu]", "voodoo2path");
+	if(drv_voodoo != NULL)
+	{
+		if(is_dir(drv_voodoo))
+		{
+			char testpath[MAX_PATH];
+			strcpy(testpath, drv_voodoo);
+			strcat(testpath, "\\3dfxSpl2.dll");
+			if(is_file(testpath))
+			{
+				strcpy(testpath, drv_voodoo);
+				strcat(testpath, "\\3dfxSpl3.dll");
+				if(is_file(testpath))
+				{
+					strcpy(testpath, drv_voodoo);
+					strcat(testpath, "\\3dfxVGL.dll");
+					if(is_file(testpath))
+					{
+						have_3dfx = TRUE;
+					}
+				}
+			}
+		}
+	}
 	
+	if(!have_3dfx)
+	{
+		HWND chbx_3dfx = GetDlgItem(hwnd, CHBX_3DFX);
+		if(chbx_3dfx)
+		{
+			sty = GetWindowLongA(chbx_3dfx, GWL_STYLE) | WS_DISABLED;
+			SetWindowLongA(chbx_3dfx, GWL_STYLE, sty);
+		}
+	}
+	else
+	{
+		if(isSettingSet(CHBX_3DFX))
+			CheckDlgButton(hwnd, CHBX_3DFX, BST_CHECKED);
+		else
+			CheckDlgButton(hwnd, CHBX_3DFX, BST_UNCHECKED);
+	}
 }
 
 #define DRAW_MOVE(_w, _h) if(draw_direction == 0) \
@@ -402,10 +444,15 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	INPUT(INP_VRAM_LIMIT, 50, LINE_HEIGHT, "", 0)
 	
 	draw_x = DRAW_START_X+LINE_WIDTH;
-	draw_y += LINE_HEIGHT + LINE_HL;
+	draw_y += LINE_HEIGHT + LINE_QL;
 	
 	LABEL(0,            120, LINE_HEIGHT, "GMR limit (MB): ");
 	INPUT(INP_GMR_LIMIT, 50, LINE_HEIGHT, "", 0)
+	
+	draw_x = DRAW_START_X+LINE_WIDTH;
+	draw_y += LINE_HEIGHT + LINE_QL;
+	
+	CHECKBOX(CHBX_3DFX,         LINE_WIDTH, LINE_HEIGHT, "Copy 3DFX files (vgl, splash)");
 	
 	draw_x = DRAW_START_X+LINE_WIDTH*2;
 	draw_y = DRAW_START_Y+LINE_HEIGHT*2;

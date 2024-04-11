@@ -85,6 +85,8 @@
 #define BTN_GLCHECKER 35
 #define BTN_DEFAULTS 36
 
+#define CHBX_3DFX  37
+
 BOOL isSettingSet(DWORD menu);
 void writeSettings(HWND hwnd);
 void readSettings();

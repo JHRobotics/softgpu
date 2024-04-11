@@ -1,3 +1,15 @@
+0.5.2024.27
+! Wine works on Windows 95
+! OpenGlide works with MiniGL wrappers
+- Driver: VIDEOPARAMETERS support
+- SVGA/Mesa: added GMR cache (require 1024 MB RAM)
+- Wine: fixed creating shader object (even if no shader support)
+- Wine: better restore screen after game/app quit
+- OpenGlide: disabled fog (and problems with it)
+- OpenGlide: restore screen after quit
+- OpenGlide: SSE and MMX optimized format conversion
+- Increased compatibility list
+
 0.5.2024.24
 ! fixed the most of mouse cursor bugs
 ! limited RAM memory usage

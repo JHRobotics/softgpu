@@ -524,12 +524,18 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 					install_settings.dd_set_system    = IsDlgButtonChecked(hwnd, RAD_DD_HAL);
 					install_settings.d8_set_nine      = IsDlgButtonChecked(hwnd, RAD_D8_NINE);
 					install_settings.d9_set_nine      = IsDlgButtonChecked(hwnd, RAD_D9_NINE);
+					install_settings.install_3dfx     = IsDlgButtonChecked(hwnd, CHBX_3DFX);
 					
 					install_settings.vram_limit = GetInputInt(hwnd, INP_VRAM_LIMIT);
 					install_settings.gmr_limit  = GetInputInt(hwnd, INP_GMR_LIMIT);
 					
 					action_create("Files copy", filescopy_start, filescopy_wait, filescopy_result);
-					//action_create("Copy system files", );
+					
+					if(install_settings.install_3dfx)
+					{
+						action_create("Voodoo files copy", voodoo_copy, NULL, NULL);
+					}
+					
 					action_create("Modify inf", infFixer, NULL, NULL);
 					
 					if(hasSETUPAPI && version_compare(&sysver, &WINVER98) >= 0)

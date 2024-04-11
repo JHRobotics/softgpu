@@ -70,6 +70,7 @@ const settings_item_t settings[] =
 	{CHBX_BUG_PREFER_FIFO, 16, FALSE},
 	{CHBX_BUG_RGB565,      17, FALSE},
 	{CHBX_BUG_DX_FLAGS,    18, FALSE},
+	{CHBX_3DFX,            19, FALSE},
 	{0, 0, FALSE}
 };
 
@@ -163,7 +164,7 @@ int intSettings(int type)
 					if(status.dwTotalPhys > 700 * 1024 * 1024)
 						settings_gmr = 256;
 					else
-						settings_gmr = 128;
+						settings_gmr = 160;
 				}
 				
 			return settings_gmr;

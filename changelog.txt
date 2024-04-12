@@ -1,4 +1,4 @@
-0.5.2024.27
+0.5.2024.28
 ! Wine works on Windows 95
 ! OpenGlide works with MiniGL wrappers
 - Driver: VIDEOPARAMETERS support

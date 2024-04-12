@@ -1,8 +1,9 @@
-0.5.2024.28
+0.5.2024.29
 ! Wine works on Windows 95
 ! OpenGlide works with MiniGL wrappers
 - Driver: VIDEOPARAMETERS support
 - SVGA/Mesa: added GMR cache (require 1024 MB RAM)
+- Mesa: fixed page fault with llvmpipe/softpipe
 - Wine: fixed creating shader object (even if no shader support)
 - Wine: better restore screen after game/app quit
 - OpenGlide: disabled fog (and problems with it)

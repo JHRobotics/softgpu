@@ -86,6 +86,10 @@ General instruction for most machines:
 ## Update
 If you have an older version of SoftGPU installed, you can update without any problem: insert the CD with the latest version into the VM and click install. The installer will take care of all the necessary modifications, only to increase compatibility it is necessary to do some steps manually:
 
+**Update VirtualBox to 7.0.16**
+
+VirtualBox 7.0.16 correct some SVGA flags ([my bug report](https://www.virtualbox.org/ticket/22011)). But this need for Mesa9x/SoftGPU to correct some behaviour. When you update from VirtualBox lower version, please run `extra/tune/vbox-optimize-7.0.16.reg` on SoftGPU CD/in SoftGPU ZIP archive. If you don't do do this, you probably will see black screen on most 3D application/games.
+
 **Update to version v0.5.2024.27**
 
 SVGA3D (especially vGPU10) is very memory consuming. Please consider to apply additional patches and set RAM to 1024 MB. Driver itself can cache memory allocation and it is faster when you have 1 GB RAM and more.
@@ -152,13 +156,17 @@ Here are some brief steps for individual virtualisation software:
 8) Install system - Windows 98 SE is highly recommended (for newer CPU, you need my patch: https://github.com/JHRobotics/patcher9x)
 9) Optional increase memory - especially vGPU10 driver is relative heavy about RAM usage. Apply **PATCHMEM by rloew**, after it you can increase base RAM (768 MB or 1024 MB should be enough)
 10) Insert SoftGPU iso (can be downloaded in Releases) and run `softgpu.exe`
-11) Click on *Install!*
-12) You maybe need some reboots (after MSVCRT and DX installation) and run `softgpu.exe` again.
-13) After complete and final reboot system should start in 640x480 in 256 colours
-14) Right click on desktop, Properties -> Settings and set the resolution (which you wish for) and colours:
+11) **VirtualBox 7.0.16 and higher:** Uncheck *DX flags* option:
+
+![VirtualBox 7.0.16 options](resource/docs/vbox-7-0-16.png)
+
+12) Click on *Install!*
+13) You maybe need some reboots (after MSVCRT and DX installation) and run `softgpu.exe` again.
+14) After complete and final reboot system should start in 640x480 in 256 colours
+15) Right click on desktop, Properties -> Settings and set the resolution (which you wish for) and colours:
 - to 32 bits for 98/Me, because only in 32 bit real HW screen acceleration works and applications are much faster
 - to 16 bits for 95, because 95 can't set colour depth on runtime (reboot is required) and lots of old applications can't start in 32 bits (all Glide for example)
-15) Verify settings:
+16) Verify settings:
 - OpenGL: run `glchecker.exe` in `tools` on SoftGPU CD
   - If renderer is **SVGA3D**, you have HW acceleration, congratulation! If you OpenGL version is **2.1** you running on vGPU9 - most application works but none vertex/pixel shaders. If OpenGL version is **3.3** you have vGPU10 active, from SoftGPU 0.5.x this is preferred variant and most application should work.
   - If renderer is **llvmpipe**, you have still SW acceleration, but at least accelerated by SSE (128 bits) or AVX (256 bit). GPU acceleration is disabled or you real GPU isn't sporting HW acceleration.

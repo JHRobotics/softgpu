@@ -98,13 +98,34 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVG
 
 
 ## SoftGPU in action
-- [3DMark03](https://youtu.be/eHmzTE07VOc) in version v0.4.2023.19
-- [3DMark03](https://youtu.be/XB7GYypyA18) in version v0.4.2023.18
-- [3DMark2001](https://youtu.be/DyrnMKvaaj8)
-- [3DMark2000](https://youtu.be/8OwfFozcICo)
-- [3DMark99](https://youtu.be/jVp0jleQX_8)
+- [3DMark03](https://youtu.be/0hm82MJL8h8) in version 0.5.2024.29
+- [3DMark99](https://youtu.be/_CpQL7X6io0) in version 0.5.2024.29 + llvmpipe (software only)
+- [3DMark99](https://youtu.be/2ykQKe-RjSs) in version 0.5.2024.29 + vGPU9
+- [3DMark99](https://youtu.be/MUpt_wdXOAY) in version 0.5.2024.29 + vGPU10
 
-For comparison, [video from real end-of-era PC is here](https://youtu.be/JqHw-Oh3TfY). So, some work still needs to be done :-)
+
+For comparison, [video from real end-of-era PC is here](https://youtu.be/JqHw-Oh3TfY).
+
+### Virtual GPU implementation
+
+Here are compare between vGPU9 (VirtualBox 6.1 + 7, VMWare) versus vGPU10 (VirtualBox 7):
+
+- [3DMark99](https://youtu.be/7JHALgeWoi8)
+- [3DMark2000](https://youtu.be/j4DXZw_-xXE)
+- [3DMark2001](https://youtu.be/pZtSJTIaIuw)
+
+If we're speaking about 3DMark99, there is also [test width TNT PCI 16MB](https://youtu.be/J8nCwO2W7OM), *(C) 1999 STB SYSTEM, INC.* But on this 'GPU' isn't Quake 3 playable neither in 640x480, so keep in mind that test performance and gaming performance can vary quite a bit.
+
+### Performance between SoftGPU version
+
+Here are some videos from older versions of SoftGPU for performance comparison:
+
+- [3DMark03](https://youtu.be/eHmzTE07VOc) in version 0.4.2023.19
+- [3DMark03](https://youtu.be/XB7GYypyA18) in version 0.4.2023.18
+- [3DMark2001](https://youtu.be/DyrnMKvaaj8) in version 0.4.2023.18
+- [3DMark2000](https://youtu.be/8OwfFozcICo) in version 0.4.2023.18
+- [3DMark99](https://youtu.be/jVp0jleQX_8) in version 0.4.2023.18
+
 
 ## Hypervisor specific setup
 
@@ -167,7 +188,7 @@ There are 2 variant of graphical HW acceleration in VirtualBox 7:
 
 **vGPU9** (9 from DirectX 9) is older variant used usually to accelerate Windows Vista/7 aero and some desktop application. On host system is drawing by DirectX 9 (Windows) or OpenGL (Linux/Mac OS). Problem is very low pixel/vertex shader support, so DirectX 8 and DirectX 9 games can't use shaders. Keep on mind that DirectX in SoftGPU is emulated by Wine, so some non-shaders applications can have problems, because some behaviour is emulated by shaders.
 
-**vGPU10** (10 from Windows 10) is newer variant and is intended for acceleration of DirectX 12 (and DirectX 12 can emulate all older DirectX API). On host system is drawing by DirectX 12 (on Linux is translated by **dxvk** to Vulkan). Main problem is a relatively large amount of bugs ([see  summary  here](https://www.virtualbox.org/ticket/21515)). vGPU10 don't work well with SoftGPU 0.4.x releases, but SoftGPU 0.5.x solved most of problems ~and now this is preferred variant.~ vGPU9 is usually faster in DX6-8 application and width Quake 2 engine games (paradoxically vGPU10 is faster width Quake 3 engine games).
+**vGPU10** (10 from Windows 10) is newer variant and is intended for acceleration of DirectX 12 (and DirectX 12 can emulate all older DirectX API). On host system is drawing by DirectX 12 (on Linux is translated by **dxvk** to Vulkan). Main problem is a relatively large amount of bugs ([see  summary  here](https://www.virtualbox.org/ticket/21515)). vGPU10 don't work well with SoftGPU 0.4.x releases, but SoftGPU 0.5.x solved most of problems ~and now this is preferred variant.~ vGPU9 is usually faster in DX6-8 application and with Quake 2 engine games (paradoxically vGPU10 is faster with Quake 3 engine games).
 
 Switch between vGPU9 and vGPU10:
 

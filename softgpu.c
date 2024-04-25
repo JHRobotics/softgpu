@@ -230,9 +230,9 @@ void readCPUInfo()
 			"cmpl $0x06000000, %%edx\n" 
 			"jne end_sse\n"
 			"mov %%ecx, %%eax\n"
-			"andl $0x00000001, %%eax\n"   // check 0 - SSE3
-			"cmpl $0x00000001, %%eax\n"
-			"jne end_sse\n" // SSE1, SSE2, SSE3
+			"andl $0x00000201, %%eax\n"   // check 0 and 9 - SSE3 and SSSE3
+			"cmpl $0x00000201, %%eax\n"
+			"jne end_sse\n" // SSE1, SSE2, SSE3, SSSE3
 			"movl $1, %0\n"
 			"andl $0x00180000, %%ecx\n"   // check 19, 20 - SSE3 and SSE4.1 SSE4.2
 			"cmpl $0x00180000, %%ecx\n"

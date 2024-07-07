@@ -38,78 +38,463 @@
 
 #define DEFAULT_INST_PATH "C:\\drivers\\softgpu"
 
-static DWORD settings_data = 0;
-static DWORD settings_vram = VRAM_DEF;
-static DWORD settings_gmr  = GMR_DEF;
+#define T_CHECKBOX  1
+#define T_RADIO     2
+#define T_INPUT_STR 3
+#define T_INPUT_NUM 4
+#define T_DROPDOWN  5
 
 typedef struct _settings_item_t
 {
 	DWORD menu;
+	DWORD type;
 	DWORD pos;
-	BOOL  negate;
+	const char *name;
+	DWORD dvalue;
+	const char *svalue;
+	char *svalue_freeptr;
+	int group;
+	int disabled;
 } settings_item_t;
 
-const settings_item_t settings[] = 
+static const settings_item_t settings_def[] = 
 {
-	{CHBX_MSCRT,   0, FALSE},
-	{CHBX_DX,      1, FALSE},
-	{RAD_NORMAL,   2, FALSE},
-	{CHBX_WINE,    3, FALSE},
-	{CHBX_GLIDE,   4, FALSE},
-	{CHBX_SIMD95,  5, TRUE},
-	{CHBX_FIXES,   6, FALSE},
-	{BTN_ABOUT,    7, FALSE},
-	{CHBX_GL95,    8, FALSE},
-	{CHBX_QXGA,    9, TRUE},
-	{CHBX_1440,   10, TRUE},
-	{CHBX_4K,     11, TRUE},
-	{CHBX_5K,     12, TRUE},
-	{RAD_DD_HAL,  13, TRUE},
-	{RAD_D8_NINE, 14, TRUE},
-	{RAD_D9_NINE, 15, TRUE},
-	{CHBX_BUG_PREFER_FIFO, 16, FALSE},
-	{CHBX_BUG_RGB565,      17, FALSE},
-	{CHBX_BUG_DX_FLAGS,    18, FALSE},
-	{CHBX_3DFX,            19, FALSE},
-	{0, 0, FALSE}
+	{CHBX_MSCRT,           T_CHECKBOX,   0, "mscrt",    0, NULL, NULL, 0, 0},
+	{CHBX_DX,              T_CHECKBOX,   1, "dx",       1, NULL, NULL, 0, 0},
+	{RAD_NORMAL,           T_RADIO,      2, "bin_mmx",  1, NULL, NULL, 1, 0},
+	{RAD_SSE,              T_RADIO,      3, "bin_sse",  0, NULL, NULL, 1, 0},
+	{RAD_SSE4,             T_RADIO,      4, "bin_sse4", 0, NULL, NULL, 1, 0},
+	{CHBX_GL95,            T_CHECKBOX,   5, "gl95",     0, NULL, NULL, 0, 0},
+	{CHBX_WINE,            T_CHECKBOX,   6, "wine",     1, NULL, NULL, 0, 0},
+	{CHBX_GLIDE,           T_CHECKBOX,   7, "glide",    1, NULL, NULL, 0, 0},
+	{CHBX_SIMD95,          T_CHECKBOX,   8, "simd95",   1, NULL, NULL, 0, 0},
+	{CHBX_3DFX,            T_CHECKBOX,   9, "3dfx",     1, NULL, NULL, 0, 0},
+	{CHBX_FIXES,           T_CHECKBOX,  10, "fixes",    1, NULL, NULL, 0, 0},
+	{CHBX_QXGA,            T_CHECKBOX,  11, "res_qxga", 0, NULL, NULL, 0, 0},
+	{CHBX_1440,            T_CHECKBOX,  12, "res_1440", 0, NULL, NULL, 0, 0},
+	{CHBX_4K,              T_CHECKBOX,  13, "res_2160", 0, NULL, NULL, 0, 0},
+	{CHBX_5K,              T_CHECKBOX,  14, "res_2880", 0, NULL, NULL, 0, 0},
+	{RAD_DD_HAL,           T_RADIO,     15, "dd_hal",   0, NULL, NULL, 2, 0},
+	{RAD_DD_WINE,          T_RADIO,     16, "dd_wine",  1, NULL, NULL, 2, 0},
+	{RAD_D8_WINE,          T_RADIO,     17, "d8_wine",  1, NULL, NULL, 3, 0},
+	{RAD_D8_NINE,          T_RADIO,     18, "d8_nine",  0, NULL, NULL, 3, 0},
+	{RAD_D9_WINE,          T_RADIO,     19, "d9_wine",  1, NULL, NULL, 4, 0},
+	{RAD_D9_NINE,          T_RADIO,     20, "d9_nine",  0, NULL, NULL, 4, 0},
+	{CHBX_BUG_PREFER_FIFO, T_CHECKBOX,  21, "fifo",     1, NULL, NULL, 0, 0},
+	{CHBX_BUG_RGB565,      T_CHECKBOX,  22, "rgb565",   1, NULL, NULL, 0, 0},
+	{CHBX_BUG_DX_FLAGS,    T_CHECKBOX,  23, "dxflags",  0, NULL, NULL, 0, 0},
+	{LBX_PROFILE,          T_DROPDOWN,  24, "profile",  0, NULL, NULL, 0, 0},
+	{INP_PATH,             T_INPUT_STR, 25, "path",     0, DEFAULT_INST_PATH, NULL, 0, 0},
+	{INP_VRAM_LIMIT,       T_INPUT_NUM, 26, "vram",     128, NULL, NULL, 0, 0},
+	{INP_SCREENTARGET,     T_INPUT_NUM, 27, "screentarget_mb",    0, NULL, NULL, 0, 0},
+	{CHBX_ST_16,           T_CHECKBOX,  28, "screentarget_16bpp", 0, NULL, NULL, 0, 0},
+	{CHBX_ST_MOUSE,        T_CHECKBOX,  29, "screentarget_mouse", 0, NULL, NULL, 0, 0},
+	{CHBX_ST_MOUSE_HIDE,   T_CHECKBOX,  30, "screentarget_mouse_hide", 0, NULL, NULL, 0, 0},
+	{CHBX_DOTCOM,          T_CHECKBOX,  31, "dotcom",   0, NULL, NULL, 0, 0},
+	{CHBX_WS2,             T_CHECKBOX,  32, "ws2",      0, NULL, NULL, 0, 0},
+	{CHBX_BLIT_SURF,       T_CHECKBOX,  33, "blit_surf", 0, NULL, NULL, 0, 0},
+	{CHBX_DMA_NEED_REREAD, T_CHECKBOX,  34, "dma_need_reread", 1, NULL, NULL, 0, 0},
+	
+	{0,                    0,            0, NULL,        0, NULL, NULL, 0, 0}
 };
 
+static settings_item_t settings_cur[sizeof(settings_def)/sizeof(settings_item_t)];
+
+static void settingClearGroup(int group)
+{
+	settings_item_t *item;
+	
+	if(group == 0)
+		return;
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		if(item->group == group)
+		{
+			item->dvalue = 0;
+		}
+	}
+}
+
+void settingsApply(HWND hwnd)
+{
+	settings_item_t *item;
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		HWND hItem = GetDlgItem(hwnd, item->menu);
+		if(hItem)
+		{
+			switch(item->type)
+			{
+				case T_RADIO:
+				case T_CHECKBOX:
+					if(item->disabled)
+					{
+//						printf("%s -> disabled\n", item->name);
+						CheckDlgButton(hwnd, item->menu, BST_UNCHECKED);
+						LONG sty = GetWindowLongA(hItem, GWL_STYLE) | WS_DISABLED;
+						SetWindowLongA(hItem, GWL_STYLE, sty);
+					}
+					else
+					{
+						LONG sty = GetWindowLongA(hItem, GWL_STYLE) & (~WS_DISABLED);
+						SetWindowLongA(hItem, GWL_STYLE, sty);
+						
+						if(item->dvalue)
+							CheckDlgButton(hwnd, item->menu, BST_CHECKED);
+						else
+							CheckDlgButton(hwnd, item->menu, BST_UNCHECKED);
+					}
+					break;
+				case T_INPUT_NUM:
+				{
+					char inp[64];
+					sprintf(inp, "%u", item->dvalue);					
+					SetWindowTextA(hItem, inp);
+					break;
+				}
+				case T_DROPDOWN:
+					SendMessage(hItem, (UINT)CB_SETCURSEL, (WPARAM)item->dvalue, (LPARAM)0);
+					break;
+			}
+		}
+	}
+}
+
+void settingsReadback(HWND hwnd)
+{
+	settings_item_t *item;
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		DWORD value;
+		HWND hItem = GetDlgItem(hwnd, item->menu);
+		if(hItem)
+		{
+			switch(item->type)
+			{
+				case T_RADIO:
+					value = IsDlgButtonChecked(hwnd, item->menu) ? 1 : 0;
+					if(value > 0)
+					{
+						settingClearGroup(item->group);
+						item->dvalue = value;
+					}
+					break;
+				case T_CHECKBOX:
+					value = IsDlgButtonChecked(hwnd, item->menu) ? 1 : 0;
+					item->dvalue = value;
+					break;
+				case T_INPUT_NUM:
+				{
+					char inp[64];
+					if(GetWindowTextA(hItem, inp, 64) != 0)
+					{
+						item->dvalue = strtol(inp, NULL, 0);
+					}
+					break;
+				}
+				case T_DROPDOWN:
+					item->dvalue = SendMessage(hItem, (UINT)CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
+					break;
+			}
+		}
+	}
+}
+
+void settingsApplyProfile(int profile)
+{
+	settings_item_t *item;
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		const char *v = iniSectionsValue("[profile]", profile, item->name);
+		if(v == NULL)
+		{
+			v = iniValue("[defaults]", item->name);
+		}
+		
+		if(v != NULL)
+		{
+			DWORD dw = strtoul(v, NULL, 0);
+			settingsSet(item->menu, dw);
+		}
+	}
+}
+
+static BOOL have_3dfx_files()
+{
+	BOOL r = FALSE;
+	const char *drv_voodoo = iniValue("[softgpu]", "voodoo2path");
+	if(drv_voodoo != NULL)
+	{
+		if(is_dir(drv_voodoo))
+		{
+			char testpath[MAX_PATH];
+			strcpy(testpath, drv_voodoo);
+			strcat(testpath, "\\3dfxSpl2.dll");
+			if(is_file(testpath))
+			{
+				strcpy(testpath, drv_voodoo);
+				strcat(testpath, "\\3dfxSpl3.dll");
+				if(is_file(testpath))
+				{
+					strcpy(testpath, drv_voodoo);
+					strcat(testpath, "\\3dfxVGL.dll");
+					if(is_file(testpath))
+					{
+						r = TRUE;
+					}
+				}
+			}
+		}
+	}
+	
+	return r;
+}
+
+static void settingsCompute()
+{
+	version_t dxtarget;
+	
+	if(version_compare(&sysver, &WINVER98) >= 0)
+	{
+		version_parse(iniValue("[softgpu]", "dx9target"), &dxtarget);
+	}
+	else
+	{
+		version_parse(iniValue("[softgpu]", "dx8target"), &dxtarget);
+	}
+	
+	if(version_compare(&sysver, &WINVER98) < 0)
+	{
+		if(!hasOpengl)
+		{
+			settingsSetByName("gl95", 1);
+		}
+		
+		if(!hasOle32)
+		{
+			settingsSetByName("dotcom", 1);
+		}
+		
+		if(!hasWS2)
+		{
+			settingsSetByName("ws2", 1);
+		}
+	}
+	else
+	{
+		settingsDisableByName("gl95",   1);
+		settingsDisableByName("dotcom", 1);
+		settingsDisableByName("ws2",    1);
+	}
+	
+	if(!hasCRT)
+	{
+		settingsSetByName("mscrt", 1);
+	}
+	
+	if(version_compare(&dxver, &dxtarget) < 0 || reinstall_dx)
+	{
+		settingsSetByName("dx", 0);
+	}
+	
+	const char *drv_sse4 = iniValue("[softgpu]", "drvpath.sse4");
+	BOOL sse4_bins = drv_sse4 != NULL && is_dir(drv_sse4);
+	
+	if(sse4_bins)
+	{
+		if(version_compare(&sysver, &WINVER98) >= 0 && hasSSE42)
+		{
+			settingsSetByName("bin_sse4", 1);
+		}
+		else if(version_compare(&sysver, &WINVER98) >= 0 && hasSSE3)
+		{
+			settingsSetByName("bin_sse3", 1);
+		}
+		else
+		{
+			settingsSetByName("bin_mmx", 1);
+		}
+	}
+	else
+	{
+		settingsDisableByName("bin_sse4", 1);
+		
+		if(version_compare(&sysver, &WINVER98) >= 0 && hasSSE3)
+		{
+			settingsSetByName("bin_sse3", 1);
+		}
+		else
+		{
+			settingsSetByName("bin_mmx", 1);
+		}
+	}
+	
+	if(version_compare(&sysver, &WINVERME) >= 0)
+	{
+		settingsDisableByName("simd95", 1);
+	}
+	
+	if(!have_3dfx_files())
+	{
+		settingsDisableByName("3dfx", 1);
+	}
+}
+
+void settingsSet(DWORD menu, DWORD value)
+{
+	settings_item_t *item;
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		if(item->menu == menu)
+		{
+			switch(item->type)
+			{
+				case T_RADIO:
+					if(value > 0)
+					{
+						settingClearGroup(item->group);
+						item->dvalue = value;
+					}
+					break;
+				case T_CHECKBOX:
+				case T_INPUT_NUM:
+				case T_DROPDOWN:
+					item->dvalue = value;
+					break;
+			}
+			break;
+		}
+	}
+}
+
+void settingsSetByName(const char *name, DWORD value)
+{
+	settings_item_t *item;
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		if(strcmp(name, item->name) == 0)
+		{
+			switch(item->type)
+			{
+				case T_RADIO:
+					if(value > 0)
+					{
+						settingClearGroup(item->group);
+						item->dvalue = value;
+					}
+					break;
+				case T_CHECKBOX:
+				case T_INPUT_NUM:
+				case T_DROPDOWN:
+					item->dvalue = value;
+					break;
+			}
+			break;
+		}
+	}
+}
+
+void settingsDisableByName(const char *name, int disabled)
+{
+	settings_item_t *item;
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		if(strcmp(name, item->name) == 0)
+		{
+			item->disabled = disabled;
+			break;
+		}
+	}
+}
+
+/* load default settings */
 void settingsReset()
 {
-	settings_data = 0;
-	settings_vram = VRAM_DEF;
-	settings_gmr  = GMR_DEF;
+	settings_item_t *item;
+	
+	memcpy(&settings_cur[0], &settings_def[0], sizeof(settings_def));
+	
+	settingsCompute();
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		const char *def = iniValue("[defaults]", item->name);
+		if(def != NULL)
+		{
+			int def_int = strtol(def, NULL, 0);
+			
+			switch(item->type)
+			{
+				case T_CHECKBOX:
+					item->dvalue = def_int;
+					break;
+				case T_RADIO:
+					if(def_int > 0)
+					{
+						settingClearGroup(item->group);
+						item->dvalue = def_int;
+					}
+					break;
+				case T_INPUT_STR:
+					item->svalue = def;
+					break;
+				case T_INPUT_NUM:
+				case T_DROPDOWN:
+					item->dvalue = def_int;
+					break;
+			}
+		}
+	}
 }
 
 BOOL isSettingSet(DWORD menu)
 {
-	const settings_item_t *s;
-	for(s = &settings[0]; s->menu != 0; s++)
+	settings_item_t *item;
+	for(item = &settings_cur[0]; item->menu != 0; item++)
 	{
-		if(s->menu == menu)
+		if(item->menu == menu)
 		{
-			DWORD p = ((settings_data) >> s->pos) & 0x1;
-			if(s->negate)
-			{
-				p = (~p) & 0x1;
-			}
-				
-			if(p == 0)
-			{
-				return TRUE;
-			}
-			else
-			{
-				return FALSE;
-			}
+			return item->dvalue;
 		}
 	}
 	
 	return FALSE;
 }
 
-void writeSettings(HWND hwnd)
+DWORD settingReadDW(DWORD menu)
 {
+	settings_item_t *item;
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		if(item->menu == menu)
+		{
+			switch(item->type)
+			{
+				case T_CHECKBOX:
+				case T_RADIO:
+				case T_INPUT_NUM:
+				case T_DROPDOWN:
+					return item->dvalue;
+					break;
+				case T_INPUT_STR:
+					return strtoul(item->svalue, NULL, 0);
+					break;
+			}
+		}
+	}
+	
+	return 0;
+}
+
+void writeSettings(HWND hwnd)
+{/*
 	const settings_item_t *s;
 	
 	DWORD new_data = 0;
@@ -128,48 +513,5 @@ void writeSettings(HWND hwnd)
 	registryWriteDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup_" SOFTGPU_STR(SOFTGPU_BUILD), new_data);
 	
 	registryWriteDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup_vram_" SOFTGPU_STR(SOFTGPU_BUILD), GetInputInt(hwnd, INP_VRAM_LIMIT));
-	registryWriteDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup_gmr_" SOFTGPU_STR(SOFTGPU_BUILD),  GetInputInt(hwnd, INP_GMR_LIMIT));
-	
-}
-
-void readSettings()
-{
-	registryReadDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup_" SOFTGPU_STR(SOFTGPU_BUILD), &settings_data);
-	
-	DWORD t = 0;
-	registryReadDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup_vram_" SOFTGPU_STR(SOFTGPU_BUILD), &t);
-	if(t != 0)
-		t = settings_vram;
-	
-	t = 0;
-	registryReadDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup_gmr_" SOFTGPU_STR(SOFTGPU_BUILD), &settings_gmr);
-	if(t != 0)
-		t = settings_gmr;
-}
-
-int intSettings(int type)
-{
-	switch(type)
-	{
-		case SETTINGS_VRAM:
-			return settings_vram;
-			break;
-		case SETTINGS_GMR:
-				if(settings_gmr == 0)
-				{
-					MEMORYSTATUS status;
-					status.dwLength = sizeof(status);
-					GlobalMemoryStatus(&status);
-					
-					if(status.dwTotalPhys > 700 * 1024 * 1024)
-						settings_gmr = 256;
-					else
-						settings_gmr = 160;
-				}
-				
-			return settings_gmr;
-			break;
-	}
-	
-	return 0;
+	*/
 }

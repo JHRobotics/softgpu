@@ -7,6 +7,9 @@
 /simd95/
 /tools/
 
+#not in use yes
+/lzma/
+
 # generated and temporary files
 *.o
 *.bak

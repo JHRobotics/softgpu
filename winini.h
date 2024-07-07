@@ -7,6 +7,10 @@ const char *iniValue(const char *section, const char *variable);
 const char *iniLine(const char *section, int line);
 const char *iniValueDef(const char *section, const char *variable, const char *defvalue);
 
+int iniSectionsCount(const char *section);
+const char *iniSectionsValue(const char *section, int section_num, const char *variable);
+const char *iniSectionsValueDef(const char *section, int section_num, const char *variable, const char *defvalue);
+
 typedef BOOL (*linerAction_f)(char *buffer, size_t buffer_size);
 
 typedef struct linerRule

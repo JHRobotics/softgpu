@@ -30,6 +30,7 @@
 #include "nocrt.h"
 
 #include "winreg.h"
+#include "winini.h" /* for addLine */
 
 #include "setuperr.h"
 
@@ -39,21 +40,22 @@ typedef struct rootkey
 {
 	const char *name;
 	HKEY key;
+	const char *inf_root;
 } rootkey_t;
 
 static const rootkey_t rootkeys[] = 
 {
-	{"HKCR", HKEY_CLASSES_ROOT},
-	{"HKCC", HKEY_CURRENT_CONFIG},
-	{"HKCU", HKEY_CURRENT_USER},
-	{"HKLM", HKEY_LOCAL_MACHINE},
-	{"HKU",  HKEY_USERS},
-	{"HKEY_CLASSES_ROOT", HKEY_CLASSES_ROOT},
-	{"HKEY_CURRENT_CONFIG", HKEY_CURRENT_CONFIG},
-	{"HKEY_CURRENT_USER", HKEY_CURRENT_USER},
-	{"HKEY_LOCAL_MACHINE", HKEY_LOCAL_MACHINE},
-	{"HKEY_USERS",  HKEY_USERS},
-	{NULL,   0}
+	{"HKCR", HKEY_CLASSES_ROOT,   "HKCR"},
+	{"HKCC", HKEY_CURRENT_CONFIG, "HKR"},
+	{"HKCU", HKEY_CURRENT_USER,   "HKCU"},
+	{"HKLM", HKEY_LOCAL_MACHINE,  "HKLM"},
+	{"HKU",  HKEY_USERS,          "HKU"},
+	{"HKEY_CLASSES_ROOT", HKEY_CLASSES_ROOT,     "HKCR"},
+	{"HKEY_CURRENT_CONFIG", HKEY_CURRENT_CONFIG, "HKR"},
+	{"HKEY_CURRENT_USER", HKEY_CURRENT_USER,     "HKCU"},
+	{"HKEY_LOCAL_MACHINE", HKEY_LOCAL_MACHINE,   "HKLM"},
+	{"HKEY_USERS",  HKEY_USERS,                  "HKU"},
+	{NULL,   0, NULL}
 };
 
 #define REG_PATH_MAX 1024
@@ -261,4 +263,79 @@ BOOL registryDelete(const char *path)
 	//printf("was: %d\n", rc);
 	
 	return rc;
+}
+
+static char inf_line[1024];
+
+BOOL registryWriteInf(const char *path, const char *str, int type, const char *inf)
+{
+	HKEY root;
+	const char *key;
+	const char *subkey;
+	const char *root_inf = NULL;
+
+	if(registrySplitPath(path, &root, &key, &subkey))
+	{
+		for(const rootkey_t *rt = &rootkeys[0]; rt->name != NULL; rt++)
+		{
+			if(rt->key == root)
+			{
+				root_inf = rt->inf_root;
+				break;
+			}
+		}
+		
+		if(root_inf != NULL)
+		{
+			if(type == WINREG_DWORD)
+			{
+				sprintf(inf_line, "%s,%s,%s,0x00010001,%s\r\n", root_inf, key, subkey, str);
+			}
+			else if(type == WINREG_STR)
+			{
+				sprintf(inf_line, "%s,%s,%s,,\"%s\"\r\n", root_inf, key, subkey, str);
+			}
+			
+			return addLine(inf, inf_line);
+		}
+	}
+	
+	return FALSE;
+}
+
+BOOL registryWriteInfDWORD(const char *path, DWORD dw, const char *inf)
+{
+	static char buf[DW_BUF];
+	
+	sprintf(buf, "0x%X", dw);
+	return registryWriteInf(path, buf, WINREG_DWORD, inf);
+}
+
+BOOL registryDeleteInf(const char *path, const char *inf)
+{
+	HKEY root;
+	const char *key;
+	const char *subkey;
+	const char *root_inf = NULL;
+
+	if(registrySplitPath(path, &root, &key, &subkey))
+	{
+		for(const rootkey_t *rt = &rootkeys[0]; rt->name != NULL; rt++)
+		{
+			if(rt->key == root)
+			{
+				root_inf = rt->inf_root;
+				break;
+			}
+		}
+		
+		if(root_inf != NULL)
+		{
+			sprintf(inf_line, "%s,%s,%s,0x00000004\r\n", root_inf, key, subkey);
+			
+			return addLine(inf, inf_line);
+		}
+	}
+	
+	return FALSE;
 }

@@ -1,12 +1,12 @@
 CC=gcc
 WINDRES=windres
-CFLAGS=-std=c99 -Wall -Wextra -O2 -march=pentium2 -fdata-sections -ffunction-sections
+CFLAGS=-std=c99 -Wall -Wextra -g -O0 -march=pentium2 -fdata-sections -ffunction-sections
 OBJ_SUFFIX = .o
 EXE_NAME = softgpu
 EXE_SUFFIX = .exe
 LDFLAGS=-static
-LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,windows
-#LIBS=-lsetupapi -lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,console
+#LIBS=-lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,windows
+LIBS=-lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,console
 
 SOFTGPU_PATCH=2024
 
@@ -42,6 +42,7 @@ SOURCES = \
   setuperr.c \
   window.c \
   settings.c \
+  gpudetect.c \
   resource/softgpu.rc
   
 
@@ -64,6 +65,8 @@ ifdef VERSION_BUILD
   CFLAGS    += -DSOFTGPU_BUILD=$(VERSION_BUILD)
   RES_FLAGS += -DSOFTGPU_BUILD=$(VERSION_BUILD)
 endif
+
+DEPS := Makefile softgpu.h
 
 %.c.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<

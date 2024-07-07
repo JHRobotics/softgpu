@@ -37,6 +37,8 @@
 #include "windrv.h"
 #include "winreg.h"
 #include "setuperr.h"
+#include "winini.h"
+
 #include "nocrt.h"
 
 #define SETUPAPI_DYN
@@ -57,6 +59,7 @@
 #define CONFIGFLAG_DISABLED 0x00000001 // Set if disabled
 #endif
 
+#if 0
 typedef struct drivers_list
 {
 	const char *name;
@@ -84,7 +87,168 @@ static const char *pci_ids[] = {
 
 static const char non_pci_vga[] = "*PNP0900";
 
+#endif
+
+
+#define VGA_DEVICES_MAX 10
+static vga_device_t devices[VGA_DEVICES_MAX];
+static int devices_cnt = 0;
+
 typedef DWORD (WINAPI *GetVersionFunc)(void);
+
+vga_device_t *device_get(int n)
+{
+	if(n < devices_cnt)
+	{
+		return &devices[n];
+	}
+	
+	return NULL;
+}
+
+int device_count()
+{
+	return devices_cnt;
+}
+
+BOOL device_parse(const char *hw_ident, vga_device_t *dev)
+{
+	char *ptr;
+	
+	if(strstr(hw_ident, "PCI\\") == hw_ident)
+	{
+		ptr = strstr(hw_ident, "VEN_");
+		if(ptr)
+		{
+			dev->pci.ven = strtoul(ptr+4, NULL, 16);
+			ptr = strstr(hw_ident, "DEV_");
+			if(ptr)
+			{
+				dev->pci.dev = strtoul(ptr+4, NULL, 16);
+				ptr = strstr(hw_ident, "SUBSYS_");
+				if(ptr)
+				{
+					dev->pci.subsys = strtoul(ptr+7, NULL, 16);
+					dev->pci.has_subsys = TRUE;
+				}
+				else
+				{
+					dev->pci.subsys = 0;
+					dev->pci.has_subsys = FALSE;
+				}
+				
+				//printf("parsed: %04X %04X %08X\n", dev->pci.ven, dev->pci.dev, dev->pci.subsys);
+				
+				dev->type = VGA_DEVICE_PCI;
+				return TRUE;
+			}
+		}
+	}
+	else if(strstr(hw_ident, "*PNP") == hw_ident)
+	{
+		dev->type = VGA_DEVICE_ISA;
+		dev->isa.pnp = strtoul(hw_ident+4, NULL, 16);
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+void device_str(vga_device_t *dev, char *buf, BOOL shorter)
+{
+	switch(dev->type)
+	{
+		case VGA_DEVICE_ISA:
+			sprintf(buf, "*PNP%4X", dev->isa.pnp);
+			break;
+		case VGA_DEVICE_PCI:
+		{
+			const char *prefix = "PCI\\";
+			if(shorter)
+				prefix = "";
+			
+			if(dev->pci.has_subsys)
+			{
+				sprintf(buf, "%sVEN_%04X&DEV_%04X&SUBSYS_%08X", prefix, dev->pci.ven, dev->pci.dev, dev->pci.subsys);
+			}
+			else
+			{
+				sprintf(buf, "%sVEN_%04X&DEV_%04X", prefix, dev->pci.ven, dev->pci.dev);
+			}
+			break;
+		}
+		default:
+			buf[0] = '\0';
+			break;
+	}
+}
+
+const char *device_ini_get(vga_device_t *dev, const char *property)
+{
+	int n, i;
+	switch(dev->type)
+	{
+		case VGA_DEVICE_ISA:
+			n = iniSectionsCount("[isa]");
+			for(i = 0; i < n; i++)
+			{
+				const char *s_pnp = iniSectionsValue("[isa]", n, "pnp");
+				if(s_pnp)
+				{
+					uint16_t pnp = strtoul(s_pnp, NULL, 0);
+					if(pnp == dev->isa.pnp)
+					{
+						return iniSectionsValue("[isa]", n, property);
+					}
+				}
+			}
+			break;
+		case VGA_DEVICE_PCI:
+			n = iniSectionsCount("[pci]");
+			for(i = 0; i < n; i++)
+			{
+				const char *s_ven    = iniSectionsValue("[pci]", i, "ven");
+				const char *s_dev    = iniSectionsValue("[pci]", i, "dev");
+				const char *s_subsys = iniSectionsValue("[pci]", i, "subsys");
+				
+				if(s_ven && s_dev)
+				{
+					uint16_t ven_id = strtoul(s_ven, NULL, 0);
+					uint16_t dev_id = strtoul(s_dev, NULL, 0);
+					
+					//printf("scan: %04X %04X\n", ven_id, dev_id);
+					
+					if(ven_id == dev->pci.ven && dev_id == dev->pci.dev)
+					{
+						BOOL found = FALSE;
+						if(!dev->pci.has_subsys && s_subsys == NULL)
+						{
+							found = TRUE;
+						}
+						else if(dev->pci.has_subsys && s_subsys != NULL)
+						{
+							uint32_t subsys_id = strtoul(s_subsys, NULL, 0);
+							
+							//printf(" subsys %08X\n", subsys_id);
+							
+							if(subsys_id == dev->pci.subsys)
+							{
+								found = TRUE;
+							}
+						}
+					
+						if(found)
+						{
+							return iniSectionsValue("[pci]", i, property);
+						}
+					}
+				}
+			}
+			break;
+	}
+	
+	return NULL;
+}
 
 void version_parse(const char *version_str, version_t *out)
 {
@@ -293,16 +457,17 @@ const char *getVGAadapter(HDEVINFO DeviceInfoSet, SP_DEVINFO_DATA *did_out)
 		{
 			if(DYN(SetupDiGetDeviceRegistryPropertyA)(DeviceInfoSet, &DeviceInfoData, SPDRP_HARDWAREID, NULL, (PBYTE)&(hwid_str[0]), sizeof(hwid_str), NULL))
 			{
-				for(const drivers_list_t *driver = &(knowndrivers[0]); driver->name != NULL; driver++)
+				vga_device_t dev;
+				
+				if(device_parse(hwid_str, &dev))
 				{
-					size_t driver_hwid_len = strlen(driver->hwid);
-					if(strnicmp(driver->hwid, hwid_str, driver_hwid_len) == 0)
+					const char *section = device_ini_get(&dev, "inf");
+					if(section != NULL)
 					{
 						memcpy(did_out, &DeviceInfoData, sizeof(SP_DEVINFO_DATA));
-						return driver->section;
+						return section;
 					}
 				}
-				
 			}
 	    DeviceIndex++;
 	  }
@@ -316,11 +481,7 @@ static DWORD checkInstallatioListLookup(HDEVINFO DeviceInfoSet)
 	static char device_id[1024];
 	int DeviceIndex = 0;
 	SP_DEVINFO_DATA DeviceInfoData;
-	int count_legacy_vga = 0;
-	int count_pci_bus = 0;
 	DWORD ret = CHECK_DRV_OK;
-	const char *test_id;
-	int i;
 	
 	if(DeviceInfoSet)
 	{
@@ -332,39 +493,13 @@ static DWORD checkInstallatioListLookup(HDEVINFO DeviceInfoSet)
 		{
 			if(DYN(SetupDiGetDeviceRegistryPropertyA)(DeviceInfoSet, &DeviceInfoData, SPDRP_HARDWAREID, NULL, (PBYTE)&(device_id[0]), sizeof(device_id), NULL))
 			{
-				for(test_id = pci_ids[0], i = 0; test_id != NULL; test_id = pci_ids[++i])
+				if(device_parse(device_id, &devices[devices_cnt]))
 				{
-					if(stricmp(device_id, test_id) == 0)
-					{
-						DWORD camps = 0;
-						if(DYN(SetupDiGetDeviceRegistryPropertyA)(DeviceInfoSet, &DeviceInfoData, SPDRP_CAPABILITIES, NULL, (PBYTE)&(camps), sizeof(camps), NULL))
-						{
-							if((camps & CM_DEVCAP_HARDWAREDISABLED) == 0)
-							{
-								count_pci_bus++;
-							}
-						}
-						break;
-					}
-				}
-
-				if(stricmp(device_id, non_pci_vga) == 0)
-				{
-					count_legacy_vga++;
+					devices_cnt++;
 				}
 			}
 	    DeviceIndex++;
 	  }
-	}
-	
-	if(count_pci_bus == 0)
-	{
-		ret |= CHECK_DRV_NOPCI;
-	}
-	
-	if(count_legacy_vga != 0)
-	{
-		ret |= CHECK_DRV_LEGACY_VGA;
 	}
 	
 	return ret;
@@ -376,7 +511,7 @@ DWORD checkInstallation()
   DWORD ret = 0;
 
   /* Enumerate all display adapters */
-  hDevInfo = DYN(SetupDiGetClassDevsA)(NULL, NULL, NULL, DIGCF_PRESENT | DIGCF_ALLCLASSES);
+  hDevInfo = DYN(SetupDiGetClassDevsA)(&GUID_DEVCLASS_DISPLAY, NULL, NULL, DIGCF_PRESENT);
 
   if(hDevInfo == INVALID_HANDLE_VALUE)
   {
@@ -589,4 +724,3 @@ BOOL installVideoDriver(const char *szDriverDir, const char *infName)
 
   return TRUE;
 }
-

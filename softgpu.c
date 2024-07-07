@@ -118,6 +118,7 @@ void runprog(const char *exe_name)
 }
 
 #define WND_SOFTGPU_CLASS_NAME "SoftGPUCLS"
+#define WND_SOFTGPU_CUR_CLASS_NAME "SoftGPUCURCLS"
 #define WND_SOFTGPU_LOAD_CLASS_NAME "SoftGPULDCLS"
 
 float rdpiX = 1.0;
@@ -132,13 +133,17 @@ uint32_t hasSSE3 = 0;
 uint32_t hasSSE42 = 0;
 uint32_t hasAVX = 0;
 BOOL     hasOpengl = FALSE;
+BOOL     hasOle32  = FALSE;
+BOOL     hasWS2    = FALSE;
 
 BOOL     reinstall_dx = FALSE;
 
-static DWORD    drvPCstatus = CHECK_DRV_OK;
+static HFONT font = NULL;
+
+HWND win_main = NULL;
+HWND win_cust  = NULL;
 
 char sysinfomsg[1024];
-
 
 BOOL checkDXReinstall()
 {
@@ -296,6 +301,20 @@ void softgpu_sysinfo()
 		FreeLibrary(testLib);
 	}
 	
+	testLib = LoadLibraryA("ole32.dll");
+	if(testLib != NULL)
+	{
+		hasOle32 = TRUE;
+		FreeLibrary(testLib);
+	}
+	
+	testLib = LoadLibraryA("ws2_32.dll");
+	if(testLib != NULL)
+	{
+		hasWS2 = TRUE;
+		FreeLibrary(testLib);
+	}
+	
 	readCPUInfo();
 	
 	reinstall_dx = checkDXReinstall();
@@ -422,10 +441,123 @@ int GetInputInt(HWND hwnd, int id)
 	return 0;
 }
 
-LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK SetFontToChild(HWND child, LPARAM lParam)
+{
+	SendMessageA(child, WM_SETFONT, (WPARAM)lParam, 1);
+	return TRUE;
+}
+
+LRESULT CALLBACK softgpuWndCurProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch(msg)
 	{
+		case WM_CREATE:
+		{
+			softgpu_cur_window_create(hwnd, lParam);
+			break;
+		}
+		case WM_CLOSE:
+		{
+			//LONG sty = GetWindowLongA(hwnd, GWL_STYLE) & (~WS_VISIBLE);
+			//SetWindowLongA(win_cust, GWL_STYLE, sty);
+			ShowWindow(win_cust, SW_HIDE);
+			return 0;
+		}
+		case WM_SETFONT:
+		{
+			/* broadcast to all subwindows */
+			EnumChildWindows(hwnd, SetFontToChild, (LPARAM)wParam /* the font */);
+		}
+	}
+	
+  return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+static void process_install()
+{
+	setInstallPath(pathinput);
+
+	if(isSettingSet(CHBX_GL95))
+	{
+		action_create("OpenGL95 install", gl95_start, NULL, NULL);
+	}
+
+	if(isSettingSet(CHBX_MSCRT))
+	{
+		action_create("MSVCRT installation", mscv_start, proc_wait, setup_end);
+	}
+
+	if(isSettingSet(CHBX_DX))
+	{
+		if(version_compare(&sysver, &WINVER98SE) >= 0)
+		{
+			setDXpath(iniValue("[softgpu]", "dx9path"));
+		}
+		else if(version_compare(&sysver, &WINVER98) >= 0)
+		{
+			setDXpath(iniValue("[softgpu]", "dx9path.fe"));
+		}
+		else
+		{
+			setDXpath(iniValue("[softgpu]", "dx8path"));
+		}
+						
+		action_create("DX installation", dx_start, proc_wait, setup_end);
+	}
+
+	if(isSettingSet(RAD_SSE4))
+	{
+		setInstallSrc(iniValue("[softgpu]", "drvpath.sse4"));
+	}
+	else if(isSettingSet(RAD_SSE))
+	{
+		setInstallSrc(iniValue("[softgpu]", "drvpath.sse3"));
+	}
+	else
+	{
+		setInstallSrc(iniValue("[softgpu]", "drvpath.mmx"));
+	}
+					
+	action_create("Files copy", filescopy_start, filescopy_wait, filescopy_result);
+					
+	if(isSettingSet(CHBX_3DFX))
+	{
+		action_create("Voodoo files copy", voodoo_copy, NULL, NULL);
+	}
+
+	action_create("Modify inf", infFixer, NULL, NULL);
+	action_create("Configure wrappers", set_inf_regs, NULL, NULL);
+
+	if(isSettingSet(CHBX_FIXES))
+	{
+		action_create("Compat. enhacements", apply_reg_fixes, NULL, NULL);
+	}
+
+	if(isSettingSet(CHBX_SIMD95))
+	{
+		action_create("SIMD95", simd95, NULL, NULL);
+	}	
+
+	if(installable_status() == SETUP_INSTALL_DRIVER && !isSettingSet(CHBX_NO_INSTALL))
+	{
+		action_create("Driver installation", driver_install, NULL, NULL);
+	}
+	else
+	{
+		action_create("Driver installation", driver_copy, NULL, NULL);
+	}
+}
+
+LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	//printf("event: %u\n", msg);
+	
+	switch(msg)
+	{
+		case WM_NCCREATE:
+		{
+			break;
+		}
 		case WM_CREATE:
 		{
 			softgpu_window_create(hwnd, lParam);
@@ -433,9 +565,12 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 		}
 		case WM_COMMAND:
 		{
-			switch (wParam)
+			switch(LOWORD(wParam))
       {
 				case BTN_INSTALL:
+					settingsReadback(win_main);
+					settingsReadback(win_cust);
+					
 					if(installbtn != INVALID_HANDLE_VALUE)
 					{
 						DWORD sty = GetWindowLongA(installbtn, GWL_STYLE) | WS_DISABLED;
@@ -443,129 +578,7 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 						
 						writeSettings(hwnd);
 					}
-					
-					setInstallPath(pathinput);
-					
-					/*
-					if(IsDlgButtonChecked(hwnd, CHBX_IE))
-					{
-						action_create("IE installation", ie_start, proc_wait, setup_end);
-					}*/
-					
-					if(IsDlgButtonChecked(hwnd, CHBX_GL95))
-					{
-						action_create("OpenGL95 install", gl95_start, NULL, NULL);
-					}
-					
-					if(IsDlgButtonChecked(hwnd, CHBX_MSCRT))
-					{
-						action_create("MSVCRT installation", mscv_start, proc_wait, setup_end);
-					}
-					
-					if(IsDlgButtonChecked(hwnd, CHBX_DX))
-					{
-						if(version_compare(&sysver, &WINVER98SE) >= 0)
-						{
-							setDXpath(iniValue("[softgpu]", "dx9path"));
-						}
-						else if(version_compare(&sysver, &WINVER98) >= 0)
-						{
-							setDXpath(iniValue("[softgpu]", "dx9path.fe"));
-						}
-						else
-						{
-							setDXpath(iniValue("[softgpu]", "dx8path"));
-						}
-						
-						action_create("DX installation", dx_start, proc_wait, setup_end);
-					}
-
-#if 0
-					if(IsDlgButtonChecked(hwnd, CHBX_IE))
-					{
-						if(version_compare(&sysver, &WINVER98) >= 0)
-						{
-							setIEpath(iniValue("[softgpu]", "ie98"));
-						}
-						else
-						{
-							setIEpath(iniValue("[softgpu]", "ie95"));
-						}
-						
-						action_create("IE installation", ie_start, proc_wait, setup_end);
-					}
-#endif
-					
-					if(IsDlgButtonChecked(hwnd, RAD_SSE4))
-					{
-						setInstallSrc(iniValue("[softgpu]", "drvpath.sse4"));
-					}
-					else if(IsDlgButtonChecked(hwnd, RAD_SSE))
-					{
-						setInstallSrc(iniValue("[softgpu]", "drvpath.sse"));
-					}
-					else
-					{
-						setInstallSrc(iniValue("[softgpu]", "drvpath"));
-					}
-					
-					install_settings.install_wine  = IsDlgButtonChecked(hwnd, CHBX_WINE);
-					install_settings.install_glide = IsDlgButtonChecked(hwnd, CHBX_GLIDE);
-					
-					install_settings.install_res_qxga = IsDlgButtonChecked(hwnd, CHBX_QXGA);
-					install_settings.install_res_1440 = IsDlgButtonChecked(hwnd, CHBX_1440);
-					install_settings.install_res_4k   = IsDlgButtonChecked(hwnd, CHBX_4K);
-					install_settings.install_res_5k   = IsDlgButtonChecked(hwnd, CHBX_5K);
-					
-					install_settings.bug_rgb565       = IsDlgButtonChecked(hwnd, CHBX_BUG_RGB565);
-					install_settings.bug_prefer_fifo  = IsDlgButtonChecked(hwnd, CHBX_BUG_PREFER_FIFO);
-					install_settings.bug_dx_flags     = IsDlgButtonChecked(hwnd, CHBX_BUG_DX_FLAGS);
-					
-					install_settings.dd_set_system    = IsDlgButtonChecked(hwnd, RAD_DD_HAL);
-					install_settings.d8_set_nine      = IsDlgButtonChecked(hwnd, RAD_D8_NINE);
-					install_settings.d9_set_nine      = IsDlgButtonChecked(hwnd, RAD_D9_NINE);
-					install_settings.install_3dfx     = IsDlgButtonChecked(hwnd, CHBX_3DFX);
-					
-					install_settings.vram_limit = GetInputInt(hwnd, INP_VRAM_LIMIT);
-					install_settings.gmr_limit  = GetInputInt(hwnd, INP_GMR_LIMIT);
-					
-					action_create("Files copy", filescopy_start, filescopy_wait, filescopy_result);
-					
-					if(install_settings.install_3dfx)
-					{
-						action_create("Voodoo files copy", voodoo_copy, NULL, NULL);
-					}
-					
-					action_create("Modify inf", infFixer, NULL, NULL);
-					
-					if(hasSETUPAPI && version_compare(&sysver, &WINVER98) >= 0)
-					{
-						if(!IsDlgButtonChecked(hwnd, CHBX_NO_INSTALL))
-						{
-							action_create("Driver installation", driver_install, NULL, NULL);
-						}
-						else
-						{
-							action_create("Driver installation", driver_without_setupapi, NULL, NULL);
-						}
-					}
-					else
-					{
-						action_create("Driver installation", driver_without_setupapi, NULL, NULL);
-					}
-					
-					action_create("Configure wrappers", winenine, NULL, NULL);
-					
-					if(IsDlgButtonChecked(hwnd, CHBX_FIXES))
-					{
-						action_create("Compat. enhacements", apply_reg_fixes, NULL, NULL);
-					}
-					
-					if(IsDlgButtonChecked(hwnd, CHBX_SIMD95))
-					{
-						action_create("SIMD95", simd95, NULL, NULL);
-					}
-					
+					process_install();
 					break;
 				case BTN_EXIT:
 					//writeSettings(hwnd);
@@ -615,8 +628,31 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 					break;
 				}
 				case BTN_DEFAULTS:
-					void settingsReset();
-					softgpu_set(hwnd);
+					settingsReset();
+					settingsApply(win_main);
+					settingsApply(win_cust);
+					//softgpu_set(hwnd);
+					break;
+				case BTN_CUSTOM:
+				{
+					ShowWindow(win_cust, SW_NORMAL);
+					SetForegroundWindow(win_cust);
+					break;
+				}
+				case LBX_PROFILE:
+					if(HIWORD(wParam) == CBN_SELCHANGE)
+					{
+            int ItemIndex = SendMessage((HWND) lParam, (UINT) CB_GETCURSEL, (WPARAM)0, (LPARAM)0);
+            printf("selected: %d\n", ItemIndex);
+            settingsReadback(win_main);
+            settingsReadback(win_cust);
+            settingsApplyProfile(ItemIndex);
+            settingsApply(win_main);
+            settingsApply(win_cust);
+            
+            //MessageBox(hwnd, (LPCWSTR) ListItem, TEXT("Item Selected"), MB_OK); 
+            return 0;
+					}
 					break;
 				
 			} // switch(wParam)
@@ -637,6 +673,30 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			PostQuitMessage(0);
 			break;
 		}
+		case WM_SETFONT:
+		{
+			/* broadcast to all subwindows */
+			EnumChildWindows(hwnd, SetFontToChild, (LPARAM)wParam /* the font */);
+		}
+		break;
+		case WM_CTLCOLORSTATIC:
+		{
+			if((HWND)lParam == GetDlgItem(hwnd, STATIC_GPUMSG)) 
+			{
+				switch(detection_status())
+				{
+					case DETECT_WARN:
+						SetTextColor((HDC)wParam, RGB(255,128,64));
+     				SetBkMode((HDC)wParam, TRANSPARENT);
+    				return GetClassLong(hwnd, GCL_HBRBACKGROUND);
+					case DETECT_ERR:
+						SetTextColor((HDC)wParam, RGB(255, 0, 0));
+     				SetBkMode((HDC)wParam, TRANSPARENT);
+    				return GetClassLong(hwnd, GCL_HBRBACKGROUND);
+				}
+			}
+		}
+		break;
   }
   
   return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -651,10 +711,6 @@ LRESULT CALLBACK softgpuLoadingProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 		case WM_CREATE:
 		{
 			softgpu_loading_create(hwnd, lParam);
-			break;
-		}
-		case WM_DESTROY:
-		{
 			break;
 		}
 	}	
@@ -715,9 +771,15 @@ int main(int argc, const char *argv[])
 	MSG msg; 
 	HINSTANCE hInst = GetModuleHandle(NULL);
   setHightDPI();
-	
+  
 	(void)argc;
 	(void)argv;
+	
+	if(!iniLoad("softgpu.ini"))
+	{
+		MessageBoxA(NULL, "Can't load configuration file softgpu.ini!", "Configuration error!", MB_ICONSTOP);
+		return 1;
+	}
 	
 	WNDCLASS wc_loading;
 	memset(&wc_loading, 0, sizeof(wc_loading));
@@ -734,15 +796,14 @@ int main(int argc, const char *argv[])
 	DWORD threadId;
 	HANDLE win_loading_th = CreateThread(NULL, 0, softgpuLoadingThread, NULL, 0, &threadId);
 	
-	readSettings();
-
   hasSETUPAPI = loadSETUAPI();
   if(hasSETUPAPI)
   {
-  	drvPCstatus = checkInstallation();
+  	checkInstallation();
   }
   
   softgpu_sysinfo();
+  check_SW_HW();
     
   if(win_loading_th != INVALID_HANDLE_VALUE)
   {
@@ -758,8 +819,9 @@ int main(int argc, const char *argv[])
 	}
 
 	// Register the window class.
-	WNDCLASS wc;
-	memset(&wc, 0, sizeof(wc));
+	WNDCLASS wc, wc2;
+	memset(&wc,  0, sizeof(WNDCLASS));
+	memset(&wc2, 0, sizeof(WNDCLASS));
 	
 	wc.style         = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc   = softgpuWndProc;
@@ -771,11 +833,16 @@ int main(int argc, const char *argv[])
 
 	RegisterClass(&wc);
 	
-	if(!iniLoad("softgpu.ini"))
-	{
-		MessageBoxA(NULL, "Can't load configuration file softgpu.ini!", "Configuration error!", MB_ICONSTOP);
-		return 1;
-	}
+	wc2.style         = CS_HREDRAW | CS_VREDRAW;
+	wc2.lpfnWndProc   = softgpuWndCurProc;
+	wc2.lpszClassName = WND_SOFTGPU_CUR_CLASS_NAME;
+	wc2.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
+	wc2.hCursor       = LoadCursor(0, IDC_ARROW);
+	wc2.hIcon         = LoadIconA(hInst, MAKEINTRESOURCE(SOFTGPU_ICON1));
+	wc2.hInstance     = hInst;
+
+	RegisterClass(&wc2);
+	
 	
 	// Get DPI for non 96 dpi displays
 	HDC hdc = GetDC(NULL);
@@ -786,52 +853,43 @@ int main(int argc, const char *argv[])
 		ReleaseDC(NULL, hdc);
 	}
 	
-	HWND win = CreateWindowA(WND_SOFTGPU_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(600), DPIY(420), 0, 0, NULL, 0);
+	settingsReset();
 	
-	if(isNT)
+	font = CreateFontA(DPIX(16), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, NULL);
+
+	win_main = CreateWindowA(WND_SOFTGPU_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(600), DPIY(420), 0, 0, NULL, 0);
+	
+	win_cust = CreateWindowA(WND_SOFTGPU_CUR_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(300), DPIY(300), 0, 0, NULL, 0);
+
+	if(font)
 	{
-		MessageBoxA(win, "Your system is NT-based (eg. NT, 2k, XP, ..., 11). But this driver package is only for Windows 9x = 95, 98 and Me.\n\nIt can't work on any modern system. Sorry.", "Only for 9x", MB_ICONSTOP);
+		SendMessageA(win_main, WM_SETFONT, (WPARAM)font, 1);
+		SendMessageA(win_cust, WM_SETFONT, (WPARAM)font, 1);
 	}
-	else
-	{
-		if(version_compare(&sysver, &WINVER98) >= 0)
-		{
-			if(drvPCstatus != CHECK_DRV_OK)
-			{
-				if(drvPCstatus & CHECK_DRV_NOPCI)
-				{
-					MessageBoxA(win, "No working PCI bus found! Without PCI bus installer and driver can't work!\n\nIf you're seeing this on QEMU, check README to solve this problem:\nhttps://github.com/JHRobotics/softgpu#qemu", "No PCI bus", MB_OK | MB_ICONHAND);
-				}
-				else if(drvPCstatus & CHECK_DRV_LEGACY_VGA)
-				{
-					MessageBoxA(win, "Found non PCI VGA adapter! This is probably result of the late PCI bus driver installation.\n\nPlease, remove this adapter first!\nMore on README in QEMU section:\nhttps://github.com/JHRobotics/softgpu#qemu", "Legacy non-PCI VGA adapter", MB_OK | MB_ICONHAND);
-				}
-			}
-		}
-		else
-		{
-			MessageBoxA(win, "In Windows 95 isn't available automatic installation. This program copy and set driver and you must manually install it from Device manager.", "Windows 95", MB_OK);
-		}
-		
-		timer_proc(win);
-	}
+	
+	ShowWindow(win_cust, SW_HIDE);
+	
+	timer_proc(win_main);
 	
 	if(reinstall_dx)
 	{
-		MessageBoxA(win, "Some DirectX files were modified by previous SoftGPU installation or other wrapper. It is recommended to install DirectX redistributable again!", "DX redistributable", MB_OK);
+		MessageBoxA(win_main, "Some DirectX files were modified by previous SoftGPU installation or other wrapper. It is recommended to install DirectX redistributable again!", "DX redistributable", MB_OK);
 	}
 	
   while(GetMessage(&msg, NULL, 0, 0))
   {
-  	/*if(IsDialogMessageA(win, &msg))
+  	if(!IsDialogMessageA(win_main, &msg))
   	{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}*/
-		IsDialogMessageA(win, &msg);
+  		if(!IsDialogMessageA(win_cust, &msg))
+  		{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
   }
   
-  DestroyWindow(win);
+  DestroyWindow(win_cust);
+  DestroyWindow(win_main);
   
   iniFree();
   

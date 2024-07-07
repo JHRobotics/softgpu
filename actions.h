@@ -52,7 +52,7 @@ void timer_proc(HWND hwnd);
 BOOL action_create(const char *name, action_start_f astart, action_process_f fprocess, action_end_f fend);
 
 /* softgpu actions */
-BOOL driver_without_setupapi(HWND hwnd);
+BOOL driver_copy(HWND hwnd);
 BOOL proc_wait(HWND hwnd);
 BOOL mscv_start(HWND hwnd);
 BOOL dx_start(HWND hwnd);
@@ -69,36 +69,12 @@ BOOL filescopy_start(HWND hwnd);
 BOOL filescopy_wait(HWND hwnd);
 BOOL filescopy_result(HWND hwnd);
 
-typedef struct _install_settings_t
-{
-	BOOL install_wine;
-	BOOL install_glide;
-	BOOL install_res_qxga;
-	BOOL install_res_1440;
-	BOOL install_res_4k;
-	BOOL install_res_5k;
-	BOOL bug_rgb565;
-	BOOL bug_prefer_fifo;
-	BOOL bug_dx_flags;
-	BOOL dd_set_system;
-	BOOL d8_set_nine;
-	BOOL d9_set_nine;
-	int vram_limit;
-	int gmr_limit;
-	BOOL has_sys_ddraw;
-	BOOL has_sys_d3d8;
-	BOOL has_sys_d3d9;
-	BOOL install_3dfx;
-} install_settings_t;
-
-extern install_settings_t install_settings;
-
 BOOL simd95(HWND hwnd);
 BOOL infFixer(HWND hwnd);
 
 BOOL apply_reg_fixes(HWND hwnd);
 
-BOOL winenine(HWND hwnd);
+BOOL set_inf_regs(HWND hwnd);
 
 void setDXpath(const char *dx);
 void setIEpath(const char *ie);

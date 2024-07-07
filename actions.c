@@ -344,6 +344,18 @@ BOOL mscv_start(HWND hwnd)
 	return install_run(iniValue("[softgpu]", "msvcrtpath"), &pi_proc, &pi_thread, TRUE);
 }
 
+BOOL dotcom_start(HWND hwnd)
+{
+	install_infobox(hwnd, ".COM for Windows 95");
+	return install_run(iniValue("[softgpu]", "dcom95path"), &pi_proc, &pi_thread, TRUE);
+}
+
+BOOL ws2_start(HWND hwnd)
+{
+	install_infobox(hwnd, "winsock 2 for Windows 95");
+	return install_run(iniValue("[softgpu]", "ws2path"), &pi_proc, &pi_thread, TRUE);
+}
+
 void delete_bad_dx_files()
 {
 	char syspath[MAX_PATH];
@@ -404,7 +416,7 @@ BOOL setup_end(HWND hwnd)
 	return TRUE;
 }
 
-BOOL driver_without_setupapi(HWND hwnd)
+BOOL driver_copy(HWND hwnd)
 {
 	static char mgsbuf[512];
 	if(version_compare(&sysver, &WINVER98) >= 0)
@@ -498,6 +510,10 @@ static void fix_ddraw(const char* file)
 static HANDLE filescopy_thread = 0;
 static int copiedfiles = 0;
 
+static BOOL has_sys_ddraw = FALSE;
+static BOOL has_sys_d3d8  = FALSE;
+static BOOL has_sys_d3d9  = FALSE;
+
 void backup_sysfiles()
 {
 	char syspath[MAX_PATH];
@@ -531,7 +547,7 @@ void backup_sysfiles()
 		{
 			removeROFlag(inspath);
 			fix_ddraw(inspath);
-			install_settings.has_sys_ddraw = TRUE;
+			has_sys_ddraw = TRUE;
 		}
 	}
 	else
@@ -544,7 +560,7 @@ void backup_sysfiles()
 			{
 				removeROFlag(inspath);
 				fix_ddraw(inspath);
-				install_settings.has_sys_ddraw = TRUE;
+				has_sys_ddraw = TRUE;
 			}
 		}
 	}
@@ -560,7 +576,7 @@ void backup_sysfiles()
 		if(CopyFileA(syspath, inspath, FALSE))
 		{
 			removeROFlag(inspath);
-			install_settings.has_sys_d3d8 = TRUE;
+			has_sys_d3d8 = TRUE;
 		}
 	}
 	else
@@ -572,7 +588,7 @@ void backup_sysfiles()
 			if(CopyFileA(syspath, inspath, FALSE))
 			{
 				removeROFlag(inspath);
-				install_settings.has_sys_d3d8 = TRUE;
+				has_sys_d3d8 = TRUE;
 			}
 		}
 	}
@@ -588,7 +604,7 @@ void backup_sysfiles()
 		if(CopyFileA(syspath, inspath, FALSE))
 		{
 			removeROFlag(inspath);
-			install_settings.has_sys_d3d9 = TRUE;
+			has_sys_d3d9 = TRUE;
 		}
 	}
 	else
@@ -600,7 +616,7 @@ void backup_sysfiles()
 			if(CopyFileA(syspath, inspath, FALSE))
 			{
 				removeROFlag(inspath);
-				install_settings.has_sys_d3d9 = TRUE;
+				has_sys_d3d9 = TRUE;
 			}
 		}
 	}
@@ -715,19 +731,17 @@ BOOL filescopy_result(HWND hwnd)
 	return TRUE;
 }
 
-install_settings_t install_settings = {FALSE};
-
 BOOL setLineSvga(char *buf, size_t bufs)
 {
 	(void)bufs;
 	
 	strcpy(buf, "CopyFiles=VMSvga.Copy");
-	if(install_settings.install_wine)
+	if(isSettingSet(CHBX_WINE))
 	{
 		strcat(buf, ",Dx.Copy,DX.CopyBackup");
 	}
 	
-	if(install_settings.install_glide)
+	if(isSettingSet(CHBX_GLIDE))
 	{
 		strcat(buf, ",Voodoo.Copy");
 	}
@@ -740,12 +754,12 @@ BOOL setLineVbox(char *buf, size_t bufs)
 	(void)bufs;
 	
 	strcpy(buf, "CopyFiles=VBox.Copy");
-	if(install_settings.install_wine)
+	if(isSettingSet(CHBX_WINE))
 	{
 		strcat(buf, ",Dx.Copy,DX.CopyBackup");
 	}
 	
-	if(install_settings.install_glide)
+	if(isSettingSet(CHBX_GLIDE))
 	{
 		strcat(buf, ",Voodoo.Copy");
 	}
@@ -758,12 +772,12 @@ BOOL setLineQemu(char *buf, size_t bufs)
 	(void)bufs;
 	
 	strcpy(buf, "CopyFiles=Qemu.Copy");
-	if(install_settings.install_wine)
+	if(isSettingSet(CHBX_WINE))
 	{
 		strcat(buf, ",Dx.Copy,DX.CopyBackup");
 	}
 	
-	if(install_settings.install_glide)
+	if(isSettingSet(CHBX_GLIDE))
 	{
 		strcat(buf, ",Voodoo.Copy");
 	}
@@ -777,23 +791,25 @@ BOOL setLineSvgaReg(char *buf, size_t bufs)
 	
 	strcpy(buf, "AddReg=VMSvga.AddReg,VM.AddReg");
 	
-	if(install_settings.install_wine && version_compare(&sysver, &WINVERME) >= 0)
+	if(isSettingSet(CHBX_WINE) && version_compare(&sysver, &WINVERME) >= 0)
 	{
 		/* these entries is only relevant to system, that cannot replace ddraw.dll */
 		strcat(buf, ",DX.addReg");
 	}
 	
-	if(install_settings.install_res_qxga)
+	if(isSettingSet(CHBX_QXGA))
 		strcat(buf, ",VM.QXGA");
 	
-	if(install_settings.install_res_1440)
+	if(isSettingSet(CHBX_1440))
 		strcat(buf, ",VM.WQHD");
 	
-	if(install_settings.install_res_4k)
+	if(isSettingSet(CHBX_4K))
 		strcat(buf, ",VM.UHD");
 	
-	if(install_settings.install_res_5k)
+	if(isSettingSet(CHBX_5K))
 		strcat(buf, ",VM.R5K");
+	
+	strcat(buf, ",VM.regextra");
 	
 	return TRUE;
 }
@@ -804,22 +820,25 @@ BOOL setLineVboxReg(char *buf, size_t bufs)
 	
 	strcpy(buf, "AddReg=VBox.AddReg,VM.AddReg");
 	
-	if(install_settings.install_wine && version_compare(&sysver, &WINVERME) >= 0)
+	if(isSettingSet(CHBX_WINE) && version_compare(&sysver, &WINVERME) >= 0)
 	{
 		strcat(buf, ",DX.addReg");
 	}
 	
-	if(install_settings.install_res_qxga)
+	if(isSettingSet(CHBX_QXGA))
 		strcat(buf, ",VM.QXGA");
 	
-	if(install_settings.install_res_1440)
+	if(isSettingSet(CHBX_1440))
 		strcat(buf, ",VM.WQHD");
 	
-	if(install_settings.install_res_4k)
+	if(isSettingSet(CHBX_4K))
 		strcat(buf, ",VM.UHD");
 	
-	if(install_settings.install_res_5k)
+	if(isSettingSet(CHBX_5K))
 		strcat(buf, ",VM.R5K");
+		
+		
+	strcat(buf, ",VM.regextra");
 	
 	return TRUE;
 }
@@ -830,22 +849,24 @@ BOOL setLineQemuReg(char *buf, size_t bufs)
 	
 	strcpy(buf, "AddReg=Qemu.AddReg,VM.AddReg");
 	
-	if(install_settings.install_wine && version_compare(&sysver, &WINVERME) >= 0)
+	if(isSettingSet(CHBX_WINE) && version_compare(&sysver, &WINVERME) >= 0)
 	{
 		strcat(buf, ",DX.addReg");
 	}
 	
-	if(install_settings.install_res_qxga)
+	if(isSettingSet(CHBX_QXGA))
 		strcat(buf, ",VM.QXGA");
 	
-	if(install_settings.install_res_1440)
+	if(isSettingSet(CHBX_1440))
 		strcat(buf, ",VM.WQHD");
 	
-	if(install_settings.install_res_4k)
+	if(isSettingSet(CHBX_4K))
 		strcat(buf, ",VM.UHD");
 	
-	if(install_settings.install_res_5k)
+	if(isSettingSet(CHBX_5K))
 		strcat(buf, ",VM.R5K");
+	
+	strcat(buf, ",VM.regextra");
 	
 	return TRUE;
 }
@@ -855,7 +876,7 @@ BOOL setLineMeFix(char *buf, size_t bufs)
 	(void)bufs;
 	
 	if(version_compare(&sysver, &WINVERME) > 0 &&
-		install_settings.install_wine)
+		isSettingSet(CHBX_WINE))
 	{
 		size_t s_full = strlen(buf);
 		size_t s_prefix = sizeof(";mefix:") - 1;
@@ -877,7 +898,7 @@ BOOL setBug565(char *buf, size_t bufs)
 	char *dst = strstr(buf, ",,");
 	if(dst)
 	{
-		sprintf(dst+2, "%d", install_settings.bug_rgb565 ? 1 : 0);
+		sprintf(dst+2, "%d", isSettingSet(CHBX_BUG_RGB565) ? 1 : 0);
 		return TRUE;
 	}
 	return FALSE;
@@ -889,7 +910,7 @@ BOOL setBugPreferFifo(char *buf, size_t bufs)
 	char *dst = strstr(buf, ",,");
 	if(dst)
 	{
-		sprintf(dst+2, "%d", install_settings.bug_prefer_fifo ? 1 : 0);
+		sprintf(dst+2, "%d", isSettingSet(CHBX_BUG_PREFER_FIFO) ? 1 : 0);
 		return TRUE;
 	}
 	return FALSE;
@@ -901,19 +922,7 @@ BOOL setBugDxFlags(char *buf, size_t bufs)
 	char *dst = strstr(buf, ",,");
 	if(dst)
 	{
-		sprintf(dst+2, "%d", install_settings.bug_dx_flags ? 1 : 0);
-		return TRUE;
-	}
-	return FALSE;
-}
-
-BOOL setLimitGMR(char *buf, size_t bufs)
-{
-	(void)bufs;
-	char *dst = strstr(buf, ",,");
-	if(dst)
-	{
-		sprintf(dst+2, "%d", install_settings.gmr_limit);
+		sprintf(dst+2, "%d", isSettingSet(CHBX_BUG_DX_FLAGS) ? 1 : 0);
 		return TRUE;
 	}
 	return FALSE;
@@ -925,7 +934,7 @@ BOOL setLimitVRAM(char *buf, size_t bufs)
 	char *dst = strstr(buf, ",,");
 	if(dst)
 	{
-		sprintf(dst+2, "%d", install_settings.vram_limit);
+		sprintf(dst+2, "%d", settingReadDW(INP_VRAM_LIMIT));
 		return TRUE;
 	}
 	return FALSE;
@@ -938,7 +947,7 @@ BOOL setLineSyscopy(char *buf, size_t bufs)
 	
 	if(strstr(buf, "ddsys.dll") != NULL)
 	{
-		if(install_settings.has_sys_ddraw)
+		if(has_sys_ddraw)
 		{
 			fix_line = TRUE;
 		}
@@ -946,7 +955,7 @@ BOOL setLineSyscopy(char *buf, size_t bufs)
 	
 	if(strstr(buf, "msd3d8.dll") != NULL)
 	{
-		if(install_settings.has_sys_d3d8)
+		if(has_sys_d3d8)
 		{
 			fix_line = TRUE;
 		}
@@ -954,7 +963,7 @@ BOOL setLineSyscopy(char *buf, size_t bufs)
 	
 	if(strstr(buf, "msd3d9.dll") != NULL)
 	{
-		if(install_settings.has_sys_d3d9)
+		if(has_sys_d3d9)
 		{
 			fix_line = TRUE;
 		}
@@ -979,7 +988,7 @@ BOOL setLine3DFX(char *buf, size_t bufs)
 {
 	(void)bufs;
 	
-	if(install_settings.install_3dfx)
+	if(isSettingSet(CHBX_3DFX))
 	{
 		int line_start = sizeof(";3dfx:")-1;
 		int line_len  = strlen(buf);
@@ -998,13 +1007,12 @@ linerRule_t infFixRules[] = {
 	{"CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",   TRUE, TRUE, setLineVbox},
 	{"CopyFiles=VMSvga.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy", TRUE, TRUE, setLineSvga},
 	{"CopyFiles=Qemu.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",   TRUE, TRUE, setLineQemu},
-	{"AddReg=VBox.AddReg,VM.AddReg,DX.addReg",                  TRUE, TRUE, setLineVboxReg},
-	{"AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg",                TRUE, TRUE, setLineSvgaReg},
-	{"AddReg=Qemu.AddReg,VM.AddReg,DX.addReg",                  TRUE, TRUE, setLineQemuReg},
+	{"AddReg=VBox.AddReg,VM.AddReg,DX.addReg,VM.regextra",                  TRUE, TRUE, setLineVboxReg},
+	{"AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg,VM.regextra",                TRUE, TRUE, setLineSvgaReg},
+	{"AddReg=Qemu.AddReg,VM.AddReg,DX.addReg,VM.regextra",                  TRUE, TRUE, setLineQemuReg},
 	{"HKLM,Software\\VMWSVGA,RGB565bug,,0",                     TRUE, TRUE, setBug565},
 	{"HKLM,Software\\VMWSVGA,PreferFIFO,,0",                    TRUE, TRUE, setBugPreferFifo},
 	{"HKLM,Software\\Mesa3D\\global,SVGA_CLEAR_DX_FLAGS,,1",    TRUE, TRUE, setBugDxFlags},
-	{"HKLM,Software\\Mesa3D\\global,SVGA_GMR_LIMIT,,",         FALSE, TRUE, setLimitGMR},
 	{"HKLM,Software\\VMWSVGA,VRAMLimit,,",                     FALSE, TRUE, setLimitVRAM},
 	{";mefix:",                                                FALSE, TRUE, setLineMeFix},
 	{";syscopy:",                                              FALSE, TRUE, setLineSyscopy},
@@ -1065,24 +1073,49 @@ BOOL simd95(HWND hwnd)
 	return TRUE;
 }
 
-BOOL winenine(HWND hwnd)
+BOOL set_inf_regs(HWND hwnd)
 {
 	(void)hwnd;
+	char dstfile[MAX_PATH];
 	
-	if(install_settings.dd_set_system)
-		registryWrite("HKLM\\Software\\DDSwitcher\\global", "system", WINREG_STR);
-	else
-		registryWrite("HKLM\\Software\\DDSwitcher\\global", "wine", WINREG_STR);
+	strcpy(dstfile, install_path);
+	strcat(dstfile, "\\");
+	strcat(dstfile, iniValue("[softgpu]", "drvfile"));
 	
-	if(install_settings.d8_set_nine)
-		registryWrite("HKLM\\Software\\D8Switcher\\global", "ninemore", WINREG_STR);
+	if(isSettingSet(RAD_DD_HAL))
+		registryWriteInf("HKLM\\Software\\DDSwitcher\\global", "system", WINREG_STR, dstfile);
 	else
-		registryWrite("HKLM\\Software\\D8Switcher\\global", "wine", WINREG_STR);
+		registryWriteInf("HKLM\\Software\\DDSwitcher\\global", "wine", WINREG_STR, dstfile);
+	
+	if(isSettingSet(RAD_D8_NINE))
+		registryWriteInf("HKLM\\Software\\D8Switcher\\global", "ninemore", WINREG_STR, dstfile);
+	else
+		registryWriteInf("HKLM\\Software\\D8Switcher\\global", "wine", WINREG_STR, dstfile);
 		
-	if(install_settings.d9_set_nine)
-		registryWrite("HKLM\\Software\\D9Switcher\\global", "nine", WINREG_STR);
+	if(isSettingSet(RAD_D9_NINE))
+		registryWriteInf("HKLM\\Software\\D9Switcher\\global", "nine", WINREG_STR, dstfile);
 	else
-		registryWrite("HKLM\\Software\\D9Switcher\\global", "wine", WINREG_STR);
+		registryWriteInf("HKLM\\Software\\D9Switcher\\global", "wine", WINREG_STR, dstfile);
+	
+	DWORD stoptions = 0;
+	if(isSettingSet(CHBX_ST_16))
+	{
+		stoptions |= 0x1;
+	}
+	
+	if(isSettingSet(CHBX_ST_MOUSE))
+	{
+		stoptions |= 0x2;
+	}
+	
+	if(isSettingSet(CHBX_ST_MOUSE_HIDE))
+	{
+		stoptions |= 0x4;
+	}
+	
+	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\STSize", settingReadDW(INP_SCREENTARGET), dstfile);
+	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\STOptions", stoptions, dstfile);
+	
 	
 	return TRUE;
 }
@@ -1093,10 +1126,15 @@ BOOL apply_reg_fixes(HWND hwnd)
 	char buf[1024];
 	int index = 0;
 	(void)hwnd;
+	char dstfile[MAX_PATH];
+	
+	strcpy(dstfile, install_path);
+	strcat(dstfile, "\\");
+	strcat(dstfile, iniValue("[softgpu]", "drvfile"));
 	
 	if(version_compare(&sysver, &WINVERME) < 0)
 	{
-		registryDelete("HKLM\\System\\CurrentControlSet\\Control\\SessionManager\\KnownDLLs\\DDRAW");
+		registryDeleteInf("HKLM\\System\\CurrentControlSet\\Control\\SessionManager\\KnownDLLs\\DDRAW", dstfile);
 	}
 	
 	for(; (line = iniLine("[fixes]", index)) != NULL; index++)
@@ -1113,14 +1151,14 @@ BOOL apply_reg_fixes(HWND hwnd)
 				
 				if(strlen(buf) > 0 && strlen(p) > 0)
 				{
-					registryWrite(buf, p, WINREG_DWORD);
+					registryWriteInf(buf, p, WINREG_DWORD, dstfile);
 				}
 			}
 			else if(strstr(p, ";DELETE") == p)
 			{
 				memcpy(buf, line, p-line);
 				buf[p-line] = '\0';
-				registryDelete(buf);
+				registryDeleteInf(buf, dstfile);
 			}
 			else
 			{
@@ -1129,7 +1167,7 @@ BOOL apply_reg_fixes(HWND hwnd)
 			
 				if(strlen(buf) > 0 && strlen(p+1) > 0)
 				{
-					registryWrite(buf, p+1, WINREG_STR);
+					registryWriteInf(buf, p+1, WINREG_STR, dstfile);
 				}
 			}
 		}

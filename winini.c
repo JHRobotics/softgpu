@@ -134,15 +134,23 @@ void iniFree()
 	}
 }
 
-const char *iniValue(const char *section, const char *variable)
+const char *iniSectionsValue(const char *section, int section_num, const char *variable)
 {
 	iniline_t *ptr = ini;
+	int n = 0;
 	
 	while(ptr != NULL)
 	{
-		if(strcmp(section, ptr->data) == 0)
+		if(strcmp(section, ptr->data) == 0 && ptr->issection)
 		{
-			break;
+			if(n == section_num)
+			{
+				break;
+			}
+			else
+			{
+				n++;
+			}
 		}
 		
 		ptr = ptr->next;
@@ -184,6 +192,11 @@ const char *iniValue(const char *section, const char *variable)
 	}
 	
 	return NULL;
+}
+
+const char *iniValue(const char *section, const char *variable)
+{
+	return iniSectionsValue(section, 0, variable);
 }
 
 const char *iniLine(const char *section, int line)
@@ -237,6 +250,38 @@ const char *iniValueDef(const char *section, const char *variable, const char *d
 	}
 
 	return defvalue;
+}
+
+const char *iniSectionsValueDef(const char *section, int section_num, const char *variable, const char *defvalue)
+{
+	const char *val = iniSectionsValue(section, section_num, variable);
+	if(val)
+	{
+		if(strlen(val) > 0)
+		{
+			return val;
+		}
+	}
+
+	return defvalue;
+}
+
+int iniSectionsCount(const char *section)
+{
+	iniline_t *ptr = ini;
+	int n = 0;
+	
+	while(ptr != NULL)
+	{
+		if(strcmp(section, ptr->data) == 0 && ptr->issection)
+		{
+			n++;
+		}
+		
+		ptr = ptr->next;
+	}
+	
+	return n;
 }
 
 BOOL liner(const char *src, const char *dst, linerRule_t *rules)

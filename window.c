@@ -44,270 +44,6 @@
 
 #define LINE_WIDTH2  350
 
-version_t dxtarget;
-
-void softgpu_set(HWND hwnd)
-{
-	DWORD sty;
-	
-	/* opengl 95 */
-	if(version_compare(&sysver, &WINVER98) < 0)
-	{
-		if(!hasOpengl && isSettingSet(CHBX_GL95))
-		{
-			CheckDlgButton(hwnd, CHBX_GL95, BST_CHECKED);
-		}
-		else
-		{
-			CheckDlgButton(hwnd, CHBX_GL95, BST_UNCHECKED);
-		}
-	}
-	else
-	{
-		HWND btnGL = GetDlgItem(hwnd, CHBX_GL95);
-		if(btnGL)
-		{
-			sty = GetWindowLongA(btnGL, GWL_STYLE) | WS_DISABLED;
-			SetWindowLongA(btnGL, GWL_STYLE, sty);
-		}
-	}
-	
-	/* CRT */
-	if(!hasCRT && isSettingSet(CHBX_MSCRT))
-	{
-		CheckDlgButton(hwnd, CHBX_MSCRT, BST_CHECKED);
-	}
-	else
-	{
-		CheckDlgButton(hwnd, CHBX_MSCRT, BST_UNCHECKED);
-	}
-	
-	/* DX redistrib. */
-	CheckDlgButton(hwnd, CHBX_DX, BST_UNCHECKED);
-	if(version_compare(&dxver, &dxtarget) < 0 || reinstall_dx)
-	{
-		if(isSettingSet(CHBX_DX))
-			CheckDlgButton(hwnd, CHBX_DX, BST_CHECKED);
-	}
-	
-	/* reset items */
-	CheckDlgButton(hwnd, RAD_NORMAL, BST_UNCHECKED);
-	CheckDlgButton(hwnd, RAD_SSE,    BST_UNCHECKED);
-	CheckDlgButton(hwnd, RAD_SSE4,   BST_UNCHECKED);
-	
-	/* MMX/SSE3/SSE4.2 */
-	const char *drv_sse4 = iniValue("[softgpu]", "drvpath.sse4");
-	int selected_sse = 0;
-	if(drv_sse4 != NULL
-		&& is_dir(drv_sse4)
-		&& version_compare(&sysver, &WINVER98) >= 0
-		&& hasSSE42)
-	{
-		selected_sse = 4;
-	}
-	else if(version_compare(&sysver, &WINVER98) >= 0 && hasSSE3)
-	{
-		selected_sse = 3;
-	}
-	
-	if(drv_sse4 == NULL || !is_dir(drv_sse4))
-	{
-		HWND radioSSE4 = GetDlgItem(hwnd, RAD_SSE4);
-		if(radioSSE4)
-		{
-			sty = GetWindowLongA(radioSSE4, GWL_STYLE) | WS_DISABLED;
-			SetWindowLongA(radioSSE4, GWL_STYLE, sty);
-		}
-	}
-	
-	switch(selected_sse)
-	{
-		case 3:
-			CheckDlgButton(hwnd, RAD_SSE, BST_CHECKED);
-			break;
-		case 4:
-			CheckDlgButton(hwnd, RAD_SSE4, BST_CHECKED);
-			break;
-		default:
-			CheckDlgButton(hwnd, RAD_NORMAL, BST_CHECKED);
-			break;
-	}
-	
-	/* Wine */
-	if(isSettingSet(CHBX_WINE))
-		CheckDlgButton(hwnd, CHBX_WINE, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_WINE, BST_UNCHECKED);
-	
-	/* Glide */
-	if(isSettingSet(CHBX_GLIDE))
-		CheckDlgButton(hwnd, CHBX_GLIDE, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_GLIDE, BST_UNCHECKED);
-	
-	/* SIMD95 */
-	if(version_compare(&sysver, &WINVERME) < 0)
-	{
-		if(!hasAVX)
-		{
-			if(isSettingSet(CHBX_SIMD95))
-			{
-				CheckDlgButton(hwnd, CHBX_SIMD95, BST_CHECKED);
-			}
-			else
-			{
-				CheckDlgButton(hwnd, CHBX_SIMD95, BST_UNCHECKED);
-			}
-		}
-	}
-	else
-	{
-		HWND btnSIMD95 = GetDlgItem(hwnd, CHBX_SIMD95);
-		if(btnSIMD95)
-		{
-			sty = GetWindowLongA(btnSIMD95, GWL_STYLE) | WS_DISABLED;
-			SetWindowLongA(btnSIMD95, GWL_STYLE, sty);
-		}
-	}
-	
-	/* fixes */
-	if(isSettingSet(CHBX_FIXES))
-		CheckDlgButton(hwnd, CHBX_FIXES, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_FIXES, BST_UNCHECKED);
-	
-	/* reset */
-	CheckDlgButton(hwnd, RAD_DD_HAL,  BST_UNCHECKED);
-	CheckDlgButton(hwnd, RAD_DD_WINE, BST_UNCHECKED);
-	CheckDlgButton(hwnd, RAD_D8_WINE, BST_UNCHECKED);
-	CheckDlgButton(hwnd, RAD_D8_NINE, BST_UNCHECKED);
-	CheckDlgButton(hwnd, RAD_D9_NINE, BST_UNCHECKED);
-	CheckDlgButton(hwnd, RAD_D9_WINE, BST_UNCHECKED);
-	
-	// wine vs nine
-	if(isSettingSet(RAD_DD_HAL))
-		CheckDlgButton(hwnd, RAD_DD_HAL, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, RAD_DD_WINE, BST_CHECKED);
-	
-	if(isSettingSet(RAD_D8_NINE))
-		CheckDlgButton(hwnd, RAD_D8_NINE, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, RAD_D8_WINE, BST_CHECKED);
-	
-	if(isSettingSet(RAD_D9_NINE))
-		CheckDlgButton(hwnd, RAD_D9_NINE, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, RAD_D9_WINE, BST_CHECKED);
-	
-	// BUGS
-	if(isSettingSet(CHBX_BUG_PREFER_FIFO))
-		CheckDlgButton(hwnd, CHBX_BUG_PREFER_FIFO, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_BUG_PREFER_FIFO, BST_UNCHECKED);
-	
-	if(isSettingSet(CHBX_BUG_RGB565))
-		CheckDlgButton(hwnd, CHBX_BUG_RGB565, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_BUG_RGB565, BST_UNCHECKED);
-	
-	if(isSettingSet(CHBX_BUG_DX_FLAGS))
-		CheckDlgButton(hwnd, CHBX_BUG_DX_FLAGS, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_BUG_DX_FLAGS, BST_UNCHECKED);
-
-	// extra resolutions
-	if(isSettingSet(CHBX_QXGA))
-		CheckDlgButton(hwnd, CHBX_QXGA, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_QXGA, BST_UNCHECKED);
-	
-	if(isSettingSet(CHBX_1440))
-		CheckDlgButton(hwnd, CHBX_1440, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_1440, BST_UNCHECKED);
-
-	if(isSettingSet(CHBX_4K))
-		CheckDlgButton(hwnd, CHBX_4K, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_4K, BST_UNCHECKED);
-	
-	if(isSettingSet(CHBX_5K))
-		CheckDlgButton(hwnd, CHBX_5K, BST_CHECKED);
-	else
-		CheckDlgButton(hwnd, CHBX_5K, BST_UNCHECKED);
-	
-	if(version_compare(&sysver, &WINVER98) < 0)
-	{
-		HWND btnNoInstall = GetDlgItem(hwnd, CHBX_NO_INSTALL);
-		if(btnNoInstall)
-		{
-			sty = GetWindowLongA(btnNoInstall, GWL_STYLE) | WS_DISABLED;
-			SetWindowLongA(btnNoInstall, GWL_STYLE, sty);
-		}
-		CheckDlgButton(hwnd, CHBX_NO_INSTALL, BST_CHECKED);
-	}
-	
-	char tmplabel[64];
-	HWND inp_vram = GetDlgItem(hwnd, INP_VRAM_LIMIT);
-	if(inp_vram)
-	{
-		sprintf(tmplabel, "%d", intSettings(SETTINGS_VRAM));
-		SetWindowTextA(inp_vram, tmplabel);
-	}
-	
-	HWND inp_gmr = GetDlgItem(hwnd, INP_GMR_LIMIT);
-	if(inp_gmr)
-	{
-		sprintf(tmplabel, "%d", intSettings(SETTINGS_GMR));
-		SetWindowTextA(inp_gmr, tmplabel);
-	}
-	
-	// 3DFX
-	BOOL have_3dfx = FALSE;
-	const char *drv_voodoo = iniValue("[softgpu]", "voodoo2path");
-	if(drv_voodoo != NULL)
-	{
-		if(is_dir(drv_voodoo))
-		{
-			char testpath[MAX_PATH];
-			strcpy(testpath, drv_voodoo);
-			strcat(testpath, "\\3dfxSpl2.dll");
-			if(is_file(testpath))
-			{
-				strcpy(testpath, drv_voodoo);
-				strcat(testpath, "\\3dfxSpl3.dll");
-				if(is_file(testpath))
-				{
-					strcpy(testpath, drv_voodoo);
-					strcat(testpath, "\\3dfxVGL.dll");
-					if(is_file(testpath))
-					{
-						have_3dfx = TRUE;
-					}
-				}
-			}
-		}
-	}
-	
-	if(!have_3dfx)
-	{
-		HWND chbx_3dfx = GetDlgItem(hwnd, CHBX_3DFX);
-		if(chbx_3dfx)
-		{
-			sty = GetWindowLongA(chbx_3dfx, GWL_STYLE) | WS_DISABLED;
-			SetWindowLongA(chbx_3dfx, GWL_STYLE, sty);
-		}
-	}
-	else
-	{
-		if(isSettingSet(CHBX_3DFX))
-			CheckDlgButton(hwnd, CHBX_3DFX, BST_CHECKED);
-		else
-			CheckDlgButton(hwnd, CHBX_3DFX, BST_UNCHECKED);
-	}
-}
-
 #define DRAW_MOVE(_w, _h) if(draw_direction == 0) \
 	{draw_y += _h;} \
 	else \
@@ -328,21 +64,21 @@ void softgpu_set(HWND hwnd)
 	hwnd, (HMENU)id, ((LPCREATESTRUCT)lParam)->hInstance, NULL); \
 	DRAW_MOVE(w, h)
 
-#define LABEL(id, w, h, text) CreateWindowA("STATIC", text,	WS_VISIBLE | WS_CHILD | SS_LEFT, \
+#define LABEL(id, w, h, text, flags) CreateWindowA("STATIC", text,	(WS_VISIBLE | WS_CHILD | SS_LEFT) | (flags), \
 	DPIX(draw_x), DPIY(draw_y), DPIX(w), DPIY(h), \
 	hwnd, (HMENU)id, ((LPCREATESTRUCT)lParam)->hInstance, NULL); \
 	DRAW_MOVE(w, h)
 	
-#define LABEL_CENTER(id, w, h, text) CreateWindowA("STATIC", text,	WS_VISIBLE | WS_CHILD | SS_CENTER, \
-	DPIX(draw_x), DPIY(draw_y), DPIX(w), DPIY(h), \
-	hwnd, (HMENU)id, ((LPCREATESTRUCT)lParam)->hInstance, NULL); \
-	DRAW_MOVE(w, h)
 
 #define INPUT(id, w, h, value, flags) CreateWindowA("EDIT", value,	(WS_VISIBLE | WS_CHILD | ES_LEFT | WS_BORDER | WS_GROUP) | (flags), \
 	DPIX(draw_x), DPIY(draw_y), DPIX(w), DPIY(h), \
 	hwnd, (HMENU)id, ((LPCREATESTRUCT)lParam)->hInstance, NULL); \
 	DRAW_MOVE(w, h)
-		
+
+#define DROPDOWN(id, w, h, items_to_show, flags) CreateWindowA("COMBOBOX", "",	(WS_VISIBLE | WS_CHILD | WS_GROUP | CBS_DROPDOWNLIST | WS_OVERLAPPED) | (flags), \
+	DPIX(draw_x), DPIY(draw_y), DPIX(w), DPIY(h*(items_to_show)), \
+	hwnd, (HMENU)id, ((LPCREATESTRUCT)lParam)->hInstance, NULL); \
+	DRAW_MOVE(w, h)
 
 #define DRAW_DIRECTION_DOWN draw_direction = 0
 #define DRAW_DIRECTION_RIGHT draw_direction = 1
@@ -388,12 +124,10 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	
 	if(version_compare(&sysver, &WINVER98) >= 0)
 	{
-		version_parse(iniValue("[softgpu]", "dx9target"), &dxtarget);
 		strcpy(dxname, "Install DirectX 9");
 	}
 	else
 	{
-		version_parse(iniValue("[softgpu]", "dx8target"), &dxtarget);
 		strcpy(dxname, "Install DirectX 8");
 	}
 	
@@ -402,7 +136,15 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	draw_x = DRAW_START_X;
 	draw_y = DRAW_START_Y;
 	
-	CHECKBOX(CHBX_GL95,         LINE_WIDTH, LINE_HEIGHT, "Install OpenGL 95");
+	DRAW_DIRECTION_RIGHT;
+	CHECKBOX(CHBX_GL95,         LINE_WIDTH/3, LINE_HEIGHT, "GL95");
+	CHECKBOX(CHBX_DOTCOM,       LINE_WIDTH/3, LINE_HEIGHT, ".COM");
+	CHECKBOX(CHBX_WS2,          LINE_WIDTH/3, LINE_HEIGHT, "WS2");
+	
+	draw_x = DRAW_START_X;
+	draw_y += LINE_HEIGHT;
+	DRAW_DIRECTION_DOWN;
+	
 	CHECKBOX(CHBX_MSCRT,        LINE_WIDTH, LINE_HEIGHT, "Install MSVCRT");
 	CHECKBOX(CHBX_DX,           LINE_WIDTH, LINE_HEIGHT, dxname);
 	
@@ -417,7 +159,6 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	CHECKBOX(CHBX_WINE,         LINE_WIDTH, LINE_HEIGHT, "Install DirectX wrapper");
 	CHECKBOX(CHBX_GLIDE,        LINE_WIDTH, LINE_HEIGHT, "Install Glide wrapper");
 	CHECKBOX(CHBX_SIMD95,       LINE_WIDTH, LINE_HEIGHT, "Enable SSE/AVX hack");
-	CHECKBOX(CHBX_FIXES,        LINE_WIDTH, LINE_HEIGHT, "Apply compatibility fixes");
 	
 	saved_y = draw_y;
 	
@@ -439,20 +180,11 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	
 	VSPACE;
 	
-	DRAW_DIRECTION_RIGHT;
-	LABEL(0,             120, LINE_HEIGHT, "VRAM limit (MB): ");
-	INPUT(INP_VRAM_LIMIT, 50, LINE_HEIGHT, "", 0)
-	
-	draw_x = DRAW_START_X+LINE_WIDTH;
-	draw_y += LINE_HEIGHT + LINE_QL;
-	
-	LABEL(0,            120, LINE_HEIGHT, "GMR limit (MB): ");
-	INPUT(INP_GMR_LIMIT, 50, LINE_HEIGHT, "", 0)
-	
-	draw_x = DRAW_START_X+LINE_WIDTH;
-	draw_y += LINE_HEIGHT + LINE_QL;
-	
 	CHECKBOX(CHBX_3DFX,         LINE_WIDTH, LINE_HEIGHT, "Copy 3DFX files (vgl, splash)");
+	CHECKBOX(CHBX_FIXES,        LINE_WIDTH, LINE_HEIGHT, "Apply compatibility fixes");
+
+	draw_x = DRAW_START_X;
+	draw_y += LINE_HEIGHT + LINE_QL;
 	
 	draw_x = DRAW_START_X+LINE_WIDTH*2;
 	draw_y = DRAW_START_Y+LINE_HEIGHT*2;
@@ -470,39 +202,65 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	BUTTON(BTN_GLCHECKER,       LINE_QWIDTH, LINE_HEIGHT, "GLChecker", 0);
 	
 	draw_x = DRAW_START_X;
-	draw_y = saved_y+LINE_HL;
-	
-	// BUGS
-	DRAW_DIRECTION_RIGHT;
-	LABEL(0,                160, LINE_HEIGHT, "HV bugs override:");
-
-	CHECKBOX(CHBX_BUG_DX_FLAGS,        LINE_HWIDTH+40,   LINE_HEIGHT, "DX flags (VBox <= 7.0.14)");
-	CHECKBOX(CHBX_BUG_PREFER_FIFO,     LINE_HWIDTH+20,   LINE_HEIGHT, "Prefer FIFO (VMware)");
-	
-	draw_y += LINE_HEIGHT;
-	draw_x = DRAW_START_X + 160;
-	
-	CHECKBOX(CHBX_BUG_RGB565,          LINE_WIDTH2,   LINE_HEIGHT, "RGB565 (VBox < 7.0.10, VBox < 6.1.46)");
-	
-	draw_x = DRAW_START_X;
-	draw_y += LINE_HEIGHT + LINE_QL;
-	DRAW_DIRECTION_DOWN;
-	
+	draw_y = saved_y;
+		
 	// Resolutions
 	DRAW_DIRECTION_RIGHT;
-	LABEL(0,                160, LINE_HEIGHT, "Resolutions > FullHD:");
+	LABEL(0,                160, LINE_HEIGHT, "Resolutions > FullHD:", 0);
 	CHECKBOX(CHBX_QXGA,     LINE_QWIDTH,   LINE_HEIGHT, "QXGA");
 	CHECKBOX(CHBX_1440,     LINE_QWIDTH,   LINE_HEIGHT, "1440p");
 	CHECKBOX(CHBX_4K,       LINE_QWIDTH,   LINE_HEIGHT, "4K");
 	CHECKBOX(CHBX_5K,       LINE_QWIDTH,   LINE_HEIGHT, "5K");
 	
+	draw_x = DRAW_START_X;
+	draw_y += LINE_HEIGHT;
+	DRAW_DIRECTION_DOWN;
+	
+	// BUGS
+	DRAW_DIRECTION_RIGHT;
+	LABEL(0,                120, LINE_HEIGHT, "Hypervisor preset:", 0);
+	
+	// profiles
+	DROPDOWN(LBX_PROFILE, LINE_WIDTH, LINE_HEIGHT, 10, 0);
+	
+	HWND profile = GetDlgItem(hwnd, LBX_PROFILE);
+	if(profile != NULL)
+	{
+		int n = iniSectionsCount("[profile]");
+		for(int i = 0; i < n; i++)
+	  {
+			int pos = (int)SendMessageA(profile, CB_ADDSTRING, 0, (LPARAM)iniSectionsValueDef("[profile]", i, "name", "?"));
+			SendMessageA(profile, CB_SETITEMDATA, pos, (LPARAM)i); 
+		}
+		SendMessage(profile, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+	}
+	
+	draw_x += 10;
+	BUTTON(BTN_CUSTOM,     LINE_QWIDTH,   LINE_HEIGHT,  "Customize", 0);
+	
+	draw_x = DRAW_START_X;
+	draw_y += LINE_HEIGHT + LINE_QL;
+	
+	LABEL(0,                120, LINE_HEIGHT, "Detected GPU:", 0);
+	
+
+	LABEL(0, LINE_WIDTH2, LINE_HEIGHT, msg_gpu_names, SS_NOPREFIX);
+	draw_y += LINE_HEIGHT;
+	draw_x = DRAW_START_X;
+	
+	LABEL(STATIC_GPUMSG, 560, LINE_HEIGHT*2, msg_gpu_status, SS_NOPREFIX);
+
+	draw_x = DRAW_START_X;
+	draw_y += LINE_QL;
+	DRAW_DIRECTION_DOWN;
+
 	// path and install
 	draw_x = DRAW_START_X;
 	draw_y += LINE_HEIGHT + LINE_HL;
 
 	DRAW_DIRECTION_RIGHT;
 	
-	LABEL(0, 100, LINE_HEIGHT, "Install path:");
+	LABEL(0, 100, LINE_HEIGHT, "Install path:", 0);
 	//draw_x += 20;
 	pathinput = INPUT(INP_PATH, LINE_WIDTH*2-100-20, LINE_HEIGHT, iniValue("[softgpu]", "defpath"), WS_TABSTOP);
 	draw_x += 20;
@@ -516,15 +274,19 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	CHECKBOX(CHBX_NO_INSTALL, LINE_WIDTH*2 - 2*20-LINE_QWIDTH, LINE_HEIGHT, "Don't install driver, only copy files");
 	draw_x += 20;
 	
-	if(!isNT)
+	const char *int_button_text = "Install!";
+	switch(installable_status())
 	{
-		installbtn = BUTTON(BTN_INSTALL, LINE_QWIDTH, LINE_HEIGHT*2+LINE_QL, "Install!", WS_TABSTOP);
-		SetFocus(installbtn);
+		case SETUP_COPY_ONLY:
+			int_button_text = "Copy files!";
+			break;
+		case SETUP_INSTALL:
+			int_button_text = "Apply and copy!";
+			break;
 	}
-	else
-	{
-		BUTTON(BTN_INSTALL, LINE_QWIDTH, LINE_HEIGHT*2+LINE_QL, "Install!", WS_DISABLED);
-	}
+	
+	installbtn = BUTTON(BTN_INSTALL, LINE_QWIDTH, LINE_HEIGHT*2+LINE_QL, int_button_text, WS_TABSTOP);
+	SetFocus(installbtn);
 	
 	draw_x = DRAW_START_X;
 	draw_y += LINE_HEIGHT + LINE_QL;
@@ -532,16 +294,9 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	BUTTON(BTN_DEFAULTS, LINE_QWIDTH, LINE_HEIGHT, "Defaults", 0);
 	draw_x += 20;
 	
-	infobox = LABEL_CENTER(0,  LINE_WIDTH*2 - 2*20 - LINE_QWIDTH, LINE_HEIGHT, "https://github.com/JHRobotics/softgpu");
-	
-#if 0 // EXTRA_INFO
-	CreateWindowA("STATIC", EXTRA_INFO,
-		WS_VISIBLE | WS_CHILD | SS_RIGHT | WS_DISABLED,
-		DPIX(DRAW_START_X+LINE_WIDTH+10), DPIY(DRAW_START_Y-5 + 0*LINE_HEIGHT), DPIX(200), DPIY(LINE_HEIGHT),
-		hwnd, (HMENU)0, ((LPCREATESTRUCT)lParam)->hInstance, NULL);
-#endif
+	infobox = LABEL(0,  LINE_WIDTH*2 - 2*20 - LINE_QWIDTH, LINE_HEIGHT, "https://github.com/JHRobotics/softgpu", SS_CENTER);
 
-	softgpu_set(hwnd);
+	settingsApply(hwnd);
 }
 
 void softgpu_loading_create(HWND hwnd, LPARAM lParam)
@@ -555,4 +310,46 @@ void softgpu_loading_create(HWND hwnd, LPARAM lParam)
 void softgpu_browser(const char *url)
 {
 	ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOW);
+}
+
+#define CUST_WIDTH 250
+
+void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
+{
+	int draw_x = 0;
+	int draw_y = 0;
+	int draw_direction = 0;
+	
+	DRAW_DIRECTION_DOWN;
+	
+	draw_x = DRAW_START_X;
+	draw_y = DRAW_START_Y;
+	
+	LABEL(0, 160, LINE_HEIGHT, "Extra settings", 0);
+	
+	CHECKBOX(CHBX_BLIT_SURF,           CUST_WIDTH,   LINE_HEIGHT, "Blit surface to screen (VBox)");
+	CHECKBOX(CHBX_DMA_NEED_REREAD,     CUST_WIDTH,   LINE_HEIGHT, "DMA need reread (VBox)");
+	
+	CHECKBOX(CHBX_BUG_DX_FLAGS,        CUST_WIDTH,   LINE_HEIGHT, "DX flags (VBox <= 7.0.14)");
+	CHECKBOX(CHBX_BUG_PREFER_FIFO,     CUST_WIDTH,   LINE_HEIGHT, "Prefer FIFO (VMware)");
+	CHECKBOX(CHBX_BUG_RGB565,          CUST_WIDTH,   LINE_HEIGHT, "RGB565 (VBox < 7.0.10, < 6.1.46)");
+	
+	DRAW_DIRECTION_RIGHT;
+	LABEL(0,             200, LINE_HEIGHT, "VRAM limit (MB): ", 0);
+	INPUT(INP_VRAM_LIMIT, 50, LINE_HEIGHT, "", 0);
+	
+	draw_x = DRAW_START_X;
+	draw_y += LINE_HEIGHT;
+	
+	LABEL(0,               200, LINE_HEIGHT, "Screen target surface (MB): ", 0);
+	INPUT(INP_SCREENTARGET, 50, LINE_HEIGHT, "", 0);
+	
+	draw_x = DRAW_START_X;
+	draw_y += LINE_HEIGHT;
+	DRAW_DIRECTION_DOWN;
+	
+	CHECKBOX(CHBX_ST_16,    CUST_WIDTH, LINE_HEIGHT, "Screen target for 16bpp");
+	CHECKBOX(CHBX_ST_MOUSE, CUST_WIDTH, LINE_HEIGHT, "Screen target accelerated mouse");
+	
+	settingsApply(hwnd);
 }

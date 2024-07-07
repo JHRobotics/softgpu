@@ -87,9 +87,24 @@
 
 #define CHBX_3DFX  37
 
+#define LBX_PROFILE 38
+#define STATIC_GPUMSG 39
+
+#define BTN_CUSTOM 40
+
+#define INP_SCREENTARGET 41
+#define CHBX_ST_16 42
+#define CHBX_ST_MOUSE 43
+#define CHBX_ST_MOUSE_HIDE 44
+
+#define CHBX_DOTCOM  45
+#define CHBX_WS2     46
+
+#define CHBX_BLIT_SURF 47
+#define CHBX_DMA_NEED_REREAD 48
+
 BOOL isSettingSet(DWORD menu);
 void writeSettings(HWND hwnd);
-void readSettings();
 int intSettings(int type);
 void settingsReset();
 
@@ -108,6 +123,8 @@ extern uint32_t  hasSSE3;
 extern uint32_t  hasSSE42;
 extern uint32_t  hasAVX;
 extern BOOL      hasOpengl;
+extern BOOL      hasOle32;
+extern BOOL      hasWS2;
 
 #define DPIX(_spx) ((int)(ceil((_spx)*rdpiX)))
 #define DPIY(_spx) ((int)(ceil((_spx)*rdpiY)))
@@ -120,6 +137,7 @@ static const version_t WINVER2K = {5,0,0,0};
 
 void softgpu_window_create(HWND hwnd, LPARAM lParam);
 void softgpu_loading_create(HWND hwnd, LPARAM lParam);
+void softgpu_cur_window_create(HWND hwnd, LPARAM lParam);
 
 extern char sysinfomsg[];
 
@@ -134,5 +152,29 @@ extern BOOL reinstall_dx;
 void softgpu_browser(const char *url);
 int GetInputInt(HWND hwnd, int id);
 void softgpu_set(HWND hwnd);
+
+void settingsSet(DWORD menu, DWORD value);
+void settingsSetByName(const char *name, DWORD value);
+void settingsDisableByName(const char *name, int disabled);
+void settingsApply(HWND hwnd);
+void settingsReadback(HWND hwnd);
+void settingsApplyProfile(int profile);
+DWORD settingReadDW(DWORD menu);
+
+extern char msg_gpu_status[];
+extern char msg_gpu_names[];
+
+#define DETECT_OK 0
+#define DETECT_WARN 1
+#define DETECT_ERR  2
+
+#define SETUP_COPY_ONLY      0
+#define SETUP_INSTALL        1
+#define SETUP_INSTALL_DRIVER 2
+
+void check_SW_HW();
+int detection_status();
+int installable_status();
+
 
 #endif /* __SOFTGPU_H__INCLUDED__ */

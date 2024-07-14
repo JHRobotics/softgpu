@@ -177,7 +177,7 @@ BOOL registryReadDWORD(const char *path, DWORD *out)
 	
 	if(registryRead(path, buf, DW_BUF))
 	{
-		*out = strtoul(buf, NULL, 10);
+		*out = strtoul(buf, NULL, 0);
 		return TRUE;
 	}
 	
@@ -202,7 +202,7 @@ BOOL registryWrite(const char *path, const char *str, int type)
 		{
 			if(type == WINREG_DWORD)
 			{
-				DWORD tmp = strtoul(str, NULL, 10);
+				DWORD tmp = strtoul(str, NULL, 0);
 				lResult = RegSetValueExA(hKey, subkey, 0, REG_DWORD, (LPBYTE)&tmp, sizeof(DWORD));
 			}
 			else if(type == WINREG_STR)

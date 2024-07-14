@@ -104,9 +104,13 @@
 #define CHBX_DMA_NEED_REREAD 48
 
 BOOL isSettingSet(DWORD menu);
-void writeSettings(HWND hwnd);
+void writeSettings();
 int intSettings(int type);
 void settingsReset();
+void settingsSetStr(DWORD menu, const char *str, BOOL copy);
+void settingsFree();
+
+BOOL readSettings();
 
 #define SETTINGS_VRAM 1
 #define SETTINGS_GMR  2
@@ -117,6 +121,7 @@ extern float rdpiY;
 extern BOOL      isNT;
 extern version_t sysver;
 extern version_t dxver;
+extern version_t dxtarget;
 extern BOOL      hasCRT;
 extern BOOL      hasSETUPAPI;
 extern uint32_t  hasSSE3;

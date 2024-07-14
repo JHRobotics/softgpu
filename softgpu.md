@@ -14,7 +14,7 @@ SoftGPU is pack of driver, wrappers, and system components to make 3D accelerati
 	- QEMU 6.x - 8.x + [QEMU 3Dfx](https://github.com/kjliew/qemu-3dfx)
 - SW 3D acceleration
 	- QEMU 6.x - 8.x
-	- VirtualBox 5.1, 6.0
+	- VirtualBox 5.x, 6.0
 
 ### Hardware
 - Intel Core2 CPU or AMD's equivalent
@@ -180,22 +180,17 @@ In real VRAM are stored framebuffer, surfaces, textures, and buffers (on modern 
 
 But where the textures and rendering buffers stored? In something called Guest Memory Region, this is guest system RAM mapped to virtual GPU. vGPU9 stores in GMR working buffer + system memory mapped textures and GPU only mapped textures are in the host memory (in theory they can be in host VRAM only, but usually they are occupying both host RAM and VRAM). vGPU10 also stores GPU mapped textures in guest system RAM (and this RAM is mapped to real GPU, more or less effectively). So minimal application eats 64 MB memory (~32 MB runtime + 32 MB frame buffer), typical game eats about 128 MB for vGPU9 and 256 for vGPU10. Compressed textures are eating more space, then uncompressed, because you need store both compressed and unpacked variant. 16-bit frame buffer is larger than 32-bit, because all rendering operations are 32-bit and final version it's software blit to 16-bit.
 
-Some later games and 3DMark can eat all 512 MB of RAM. So that why is here GMR limitation, because if the driver (GMR allocation is done by RING-0 driver) eats all usable RAM, system freeze.
-
-SoftGPU will limit VRAM to 128 MB and GMR to 160 MB for 512 MB system and for 256 MB if you have 768 MB RAM and more. These limits can be adjust by this registry keys:
+Some later games and 3DMark can eat near 700 MB of RAM. SoftGPU in version *v0.5.2024.29-alpha2* have hard limit of maximum GMR, newer version can limit GMR allocation dynamically based on physical memory usage. Also GMR was moved to shared memory to have more logical space to use. Maximum GMR usage in now limited to 400 MB, but if you need more can increase the limit by this setting (700 MB in this example):
 
 ```
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\VMWSVGA]
-"VRAMLimit"=dword:00000080
-
 [HKEY_LOCAL_MACHINE\Software\Mesa3D\global]
-"SVGA_GMR_LIMIT"="128"
+"SVGA_MEM_MAX"="700"
 ```
 
-GMR limit can be configured per application, 128 MB is usually enough, but 3Dmark03 for example need about 192 MB to work correctly.
+Physical maximum is 1024 MB, around 800-900 should work. But be careful, more space is not equal to speed or stability.
 
 
 ## Registry configuration
@@ -254,7 +249,7 @@ REGEDIT4
 [HKEY_LOCAL_MACHINE\Software\VMWSVGA]
 ;
 ; Limit mapping of VRAM in MB. For Windows 9x is limit
-; around 300 MB and if you attach mode, system will crash.
+; around 300 MB and if you attach more, system will crash.
 ; But keep on might that VRAM is almost unutilized and if you
 ; don't need 8k resolution isn't reason why increase this value.
 "VRAMLimit"=dword:00000080

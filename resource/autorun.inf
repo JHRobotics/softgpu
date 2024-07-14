@@ -1,4 +1,4 @@
 [autorun]
 open=softgpu.exe
-icon=softgpu.ico
+icon=softgpu-ico.ico
 label=SoftGPU Installer

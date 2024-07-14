@@ -192,13 +192,13 @@ const char *device_ini_get(vga_device_t *dev, const char *property)
 			n = iniSectionsCount("[isa]");
 			for(i = 0; i < n; i++)
 			{
-				const char *s_pnp = iniSectionsValue("[isa]", n, "pnp");
+				const char *s_pnp = iniSectionsValue("[isa]", i, "pnp");
 				if(s_pnp)
 				{
 					uint16_t pnp = strtoul(s_pnp, NULL, 0);
 					if(pnp == dev->isa.pnp)
 					{
-						return iniSectionsValue("[isa]", n, property);
+						return iniSectionsValue("[isa]", i, property);
 					}
 				}
 			}
@@ -221,7 +221,7 @@ const char *device_ini_get(vga_device_t *dev, const char *property)
 					if(ven_id == dev->pci.ven && dev_id == dev->pci.dev)
 					{
 						BOOL found = FALSE;
-						if(!dev->pci.has_subsys && s_subsys == NULL)
+						if(s_subsys == NULL)
 						{
 							found = TRUE;
 						}

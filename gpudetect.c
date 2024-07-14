@@ -47,15 +47,19 @@ const char msg_95[] =
 	"This program copy and set driver but you've to manually install it from Device manager.";
 
 const char msg_modegpu[] = 
-	"There're more GPUs in this system. Please remove unwanted GPUs from Device manager before continue! "
+	"There're more GPUs in this system. Please remove unwanted GPUs from Device Manager before continue! "
 	"Multi-GPU isn't supported yet.";
 
 const char msg_unknown[] = 
-	"There isn't any known GPU for this driver. Installer only create GPU driver, but you've to"
+	"There isn't any known GPU for this driver. Installer only create GPU driver, but you've to "
 	"install the driver manualy if you sure, that match to your device.";
 
 const char msg_nogpu[] = 
 	"No video detected, please make sure, that at last Microsoft generic driver (640x480, 4bpp) is instaled!";
+
+const char msg_win95[] = 
+	"Automatic installation isn't possible on Windows 95. Installer preset driver, but you have to install it manualy via Device Manager. "
+	"See README for more info.";
 
 void check_SW_HW()
 {
@@ -120,25 +124,11 @@ void check_SW_HW()
 	{
 		if(version_compare(&sysver, &WINVER98) < 0)
 		{
-			if(supported == 0 && strlen(msg_gpu_status) == 0)
-			{
-				strcpy(msg_gpu_status, msg_unknown);
-			}
-			else if(supported == 0)
-			{
-				detection = DETECT_ERR;
-				installable = SETUP_INSTALL;
-			}
-			else if(errors > 0)
-			{
-				detection = DETECT_WARN;
-				installable = SETUP_INSTALL;
-			}
-			else
-			{
-				detection = DETECT_OK;
-				installable = SETUP_INSTALL;
-			}
+			strcpy(msg_gpu_names, "no automatic detection on Windows 95");
+			strcpy(msg_gpu_status, msg_win95);
+			
+			detection = DETECT_ERR;
+			installable = SETUP_INSTALL;
 		}
 		else
 		{

@@ -32,7 +32,7 @@
 
 //CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST softgpu.xml
 #ifndef EXTRA_ICO
-SOFTGPU_ICON1 ICON "softgpu.ico"
+SOFTGPU_ICON1 ICON "softgpu-ico.ico"
 #else
 SOFTGPU_ICON1 ICON SOFTGPU_STR(EXTRA_ICO)
 #endif
@@ -51,7 +51,7 @@ BLOCK "StringFileInfo"
 		VALUE "FileDescription", "Software/hardware accelerated driver for Windows 9x Virtual Machines"
 		VALUE "FileVersion", SOFTGPU_VERSION_STR
 		VALUE "InternalName", "softgpu.exe"
-		VALUE "LegalCopyright", "(C) 2022-2023 JHRobotics"
+		VALUE "LegalCopyright", "(C) 2022-2024 JHRobotics"
 		VALUE "OriginalFilename", "softgpu.exe"
 		VALUE "PrivateBuild", SOFTGPU_VERSION_STR
 		VALUE "ProductName", "Software/hardware accelerated driver for Windows 9x Virtual Machines"

@@ -41,7 +41,7 @@ typedef struct install_action
 	struct install_action *next;
 } install_action_t;
 
-void softgpu_done(HWND hwnd);
+void softgpu_done(HWND hwnd, BOOL reboot);
 void softgpu_reset(HWND hwnd);
 void softgpu_info(HWND hwnd, const char *part);
 
@@ -64,6 +64,8 @@ void setInstallSrc(const char *path);
 BOOL voodoo_copy(HWND hwnd);
 
 BOOL gl95_start(HWND hwnd);
+BOOL dotcom_start(HWND hwnd);
+BOOL ws2_start(HWND hwnd);
 
 BOOL filescopy_start(HWND hwnd);
 BOOL filescopy_wait(HWND hwnd);

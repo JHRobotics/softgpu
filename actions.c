@@ -43,6 +43,7 @@ static const char *dx_path = NULL;
 static const char *ie_path = NULL;
 
 static BOOL forced_shutdown = FALSE;
+static BOOL driver_installed = FALSE;
 
 void setInstallPath(HWND input)
 {
@@ -169,7 +170,7 @@ void timer_proc(HWND hwnd)
 		/* all done */
 		if(actual_action == NULL)
 		{
-			softgpu_done(hwnd);
+			softgpu_done(hwnd, driver_installed);
 		}
 	}
 	else if(actual_action)
@@ -331,7 +332,7 @@ void install_infobox(HWND hwnd, const char *name)
 	else
 #endif
 	{
-		sprintf(msg_buffer, "Setup will install now %s\n\nAfrer instalation reboot is recomended.\n\nAfter reboot, please run SOFTGPU setup again!", name);
+		sprintf(msg_buffer, "Setup will now install %s\n\nAfrer instalation reboot is recomended.\n\nAfter reboot, please run SOFTGPU setup again!", name);
 		MessageBoxA(hwnd, msg_buffer, name, MB_ICONINFORMATION);
 	}
 
@@ -339,7 +340,6 @@ void install_infobox(HWND hwnd, const char *name)
 
 BOOL mscv_start(HWND hwnd)
 {
-	//MessageBoxA(hwnd, "Setup will install now VC6 redistributable.\n\nAfrer instalation reboot is recomended.\n\nAfter reboot, please run SOFTGPU setup again!", "VC6 redistributable instalation", MB_OK | MB_ICONINFORMATION);
 	install_infobox(hwnd, "VC6 redistributable");
 	return install_run(iniValue("[softgpu]", "msvcrtpath"), &pi_proc, &pi_thread, TRUE);
 }
@@ -352,8 +352,18 @@ BOOL dotcom_start(HWND hwnd)
 
 BOOL ws2_start(HWND hwnd)
 {
-	install_infobox(hwnd, "winsock 2 for Windows 95");
-	return install_run(iniValue("[softgpu]", "ws2path"), &pi_proc, &pi_thread, TRUE);
+	int r = MessageBoxA(hwnd, "Setup will now install Winsock 2 update, before continue is required to have TCP/IP enabled. Process to installation or exit to configure interface?\n\n"
+		"Yes = start the instalation\n"
+		"No = exit SoftGPU installer\n\n"
+		"Reboot is required after installation.", "WS2 instalation", MB_YESNO | MB_ICONQUESTION);
+	
+	if(r == IDYES)
+	{
+		return install_run(iniValue("[softgpu]", "ws2path"), &pi_proc, &pi_thread, TRUE);
+	}
+	
+	forced_shutdown = TRUE;
+	return FALSE;
 }
 
 void delete_bad_dx_files()
@@ -419,6 +429,9 @@ BOOL setup_end(HWND hwnd)
 BOOL driver_copy(HWND hwnd)
 {
 	static char mgsbuf[512];
+	
+	driver_installed = FALSE;
+	
 	if(version_compare(&sysver, &WINVER98) >= 0)
 	{
 		sprintf(mgsbuf, "Driver files are located here: %s", install_path);
@@ -436,6 +449,8 @@ BOOL driver_copy(HWND hwnd)
 BOOL driver_install(HWND hwnd)
 {
 	(void)hwnd;
+	
+	driver_installed = TRUE;
 	
 	return installVideoDriver(install_path, iniValue("[softgpu]", "drvfile"));
 }
@@ -1116,6 +1131,8 @@ BOOL set_inf_regs(HWND hwnd)
 	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\STSize", settingReadDW(INP_SCREENTARGET), dstfile);
 	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\STOptions", stoptions, dstfile);
 	
+	registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\SVGA_BLIT_SURF_TO_SCREEN", settingReadDW(CHBX_BLIT_SURF),       dstfile);
+	registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\SVGA_DMA_NEED_REREAD",     settingReadDW(CHBX_DMA_NEED_REREAD), dstfile);
 	
 	return TRUE;
 }

@@ -232,6 +232,7 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 			int pos = (int)SendMessageA(profile, CB_ADDSTRING, 0, (LPARAM)iniSectionsValueDef("[profile]", i, "name", "?"));
 			SendMessageA(profile, CB_SETITEMDATA, pos, (LPARAM)i); 
 		}
+
 		SendMessage(profile, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
 	}
 	
@@ -281,7 +282,7 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 			int_button_text = "Copy files!";
 			break;
 		case SETUP_INSTALL:
-			int_button_text = "Apply and copy!";
+			int_button_text = "Start!";
 			break;
 	}
 	

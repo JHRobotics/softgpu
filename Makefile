@@ -1,12 +1,17 @@
 CC=gcc
 WINDRES=windres
-CFLAGS=-std=c99 -Wall -Wextra -g -O0 -march=pentium2 -fdata-sections -ffunction-sections
 OBJ_SUFFIX = .o
 EXE_NAME = softgpu
 EXE_SUFFIX = .exe
 LDFLAGS=-static
-#LIBS=-lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,windows
-LIBS=-lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,console
+
+ifdef DEBUG
+  LIBS=-lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,console
+  CFLAGS=-std=c99 -Wall -Wextra -g -O0 -march=pentium2 -fdata-sections -ffunction-sections
+else
+  LIBS=-lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,windows
+  CFLAGS=-std=c99 -Wall -Wextra -Os -march=pentium2 -fdata-sections -ffunction-sections
+endif
 
 SOFTGPU_PATCH=2024
 

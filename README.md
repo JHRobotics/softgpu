@@ -20,6 +20,8 @@ This is ready-to-use compilation of my ~4~ 6 projects:
       - Last version of DirectX 8 (included in package)
       - Visual C runtime (version 6 included in package)
       - OpenGL 95 for versions without `opengl32.dll` (included in package)
+      - dotcom for Windows 95 (required by DX, included)
+      - Winsock 2 (LLVM depends on `ws2_32.dll`, included)
 
 ## Feature support
 
@@ -28,6 +30,10 @@ This is ready-to-use compilation of my ~4~ 6 projects:
 | Oracle VirtualBox  | 6.1, 7.0   | VboxVGA  |     ✔      |   ✔   |   ✔   |   ✔   |   ❌    | SB16, AC97        |
 | Oracle VirtualBox  | 6.1, 7.0   | VboxSVGA |     ✔      |   ✔   |   ✔   |   ✔   |   ✔    | SB16, AC97        |
 | Oracle VirtualBox  | 6.1, 7.0   |  VMSVGA  |     ✔      |   ✔   |   ✔   |   ✔   |   ✔    | SB16, AC97        |
+| Oracle VirtualBox  | 6.0        | VboxVGA  |     ✔      |   ✔   |   ✔   |   ✔   |   ❌    | SB16, AC97        |
+| Oracle VirtualBox  | 6.0        | VboxSVGA |    ❌      |   -   |   -   |   -   |   ❌   | n/a        |
+| Oracle VirtualBox  | 6.0        |  VMSVGA  |    ❌      |   -   |   -   |   -   |   ❌   | n/a        |
+| Oracle VirtualBox  | 5.2        |    -     |     ✔      |   ✔   |   ✔   |   ✔   |   ❌    | SB16, AC97        |
 | VMware Workstation | 16, 17     |    -     |     ✔      |   ✔   |   ✔   |   ⚠   |   ✔    | SBPCI128          |
 | QEMU               | 7.x, 8.0   |   std    |     ✔      |   ✔   |   ✔   |   ✔   |   ❌    | adlib, SB16, AC97 |
 | QEMU               | 7.x, 8.0   |  vmware  |     ✔      |   ✔   |   ❌   |   ❌   |   ❌    | adlib, SB16, AC97 |
@@ -45,10 +51,10 @@ Not all renderers supporting all application/games, performance expectation is i
 | Renderer            | Guest Requirements   | DX9  | DX9 shaders | DX8  | DX8 shaders | DX6-7 | OpenGL | OpenGL version | multiple contexts | window mode | Glide | Glide DOS | Expected FPS |
 | :------------------ | :------------: | :--: | :---------: | :--: | :---------: | :---: | :----: | :------------: | :---------------: | :---------: | :---: | :-------: | :----------: |
 | softpipe            |      -         |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    1-3       |
-| llvmlipe (128 bits) |     SSE        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    10-15     |
-| llvmlipe (256 bits) |   SSE, AVX     |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    12-20     |
+| llvmlipe (128 bits) |     SSE        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     4.5        |  ✔               |  ✔         |  ✔   |    ❌     |    10-15     |
+| llvmlipe (256 bits) |   SSE, AVX     |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     4.5        |  ✔               |  ✔         |  ✔   |    ❌     |    12-20     |
 | SVGA3D              | SVGA-II (gen9) |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |     2.1        |  ⚠               |  ✔         |  ✔   |    ❌     |    30-100     |
-| SVGA3D              | SVGA-II (gen10)|  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3        |  ✔               |  ✔         |  ✔   |    ❌     |    30-80     |
+| SVGA3D              | SVGA-II (gen10)|  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     4.1        |  ✔               |  ✔         |  ✔   |    ❌     |    30-80     |
 | qemu-3dfx           | [qemu-3dfx](https://github.com/kjliew/qemu-3dfx) |  ✔  |      ✔     |  ✔               |  ✔         |   ✔  |      ✔     |     native        |  ❌   |   ❌   |  ✔ *   |    ✔ *     |    native/2 *  |
 
 (*) Note for qemu-3dfx: performance depends on CPU emulation - you can reach about 1/2 of native GPU performance when using KVM acceleration on x86-64 host, about 1/5 when using Hyper-V, and about from 1/100 when is using accelerated emulation and about 1/1000 when using full emulation. DOS Glide and *native* Glide wrapper isn't part of SoftGPU. You have to compile it from source or you can [donate qemu-3dfx author](https://github.com/kjliew/qemu-3dfx#donation).
@@ -82,6 +88,11 @@ General instruction for most machines:
 7) Have fun!
 
 [^1]: Do this before install/update DirectX redistributable, because audio drivers usually overwrite DX files with outdated versions.
+
+### Windows 95 installation
+
+Windows 95 haven't [Setup API](https://learn.microsoft.com/en-us/windows/win32/api/setupapi/), or if has, it isn't fully operable. This is reason why SoftGPU cannot install driver automatically.
+
 
 ## Update
 If you have an older version of SoftGPU installed, you can update without any problem: insert the CD with the latest version into the VM and click install. The installer will take care of all the necessary modifications, only to increase compatibility it is necessary to do some steps manually:
@@ -156,9 +167,9 @@ Here are some brief steps for individual virtualisation software:
 8) Install system - Windows 98 SE is highly recommended (for newer CPU, you need my patch: https://github.com/JHRobotics/patcher9x)
 9) Optional increase memory - especially vGPU10 driver is relative heavy about RAM usage. Apply **PATCHMEM by rloew**, after it you can increase base RAM (768 MB or 1024 MB should be enough)
 10) Insert SoftGPU iso (can be downloaded in Releases) and run `softgpu.exe`
-11) **VirtualBox 7.0.16 and higher:** Uncheck *DX flags* option:
+11) Select profile match to your VirtualBox version
 
-![VirtualBox 7.0.16 options](resource/docs/vbox-7-0-16.png)
+![SoftGPU profile selection](resource/docs/profile.png)
 
 12) Click on *Install!*
 13) You maybe need some reboots (after MSVCRT and DX installation) and run `softgpu.exe` again.
@@ -168,15 +179,15 @@ Here are some brief steps for individual virtualisation software:
 - to 16 bits for 95, because 95 can't set colour depth on runtime (reboot is required) and lots of old applications can't start in 32 bits (all Glide for example)
 16) Verify settings:
 - OpenGL: run `glchecker.exe` in `tools` on SoftGPU CD
-  - If renderer is **SVGA3D**, you have HW acceleration, congratulation! If you OpenGL version is **2.1** you running on vGPU9 - most application works but none vertex/pixel shaders. If OpenGL version is **3.3** you have vGPU10 active, from SoftGPU 0.5.x this is preferred variant and most application should work.
+  - If renderer is **SVGA3D**, you have HW acceleration, congratulation! If you OpenGL version is **2.1** you running on vGPU9 - most application works but none vertex/pixel shaders. If OpenGL version is **4.1** you have vGPU10 active, from SoftGPU 0.5.x this is preferred variant and most application should work.
   - If renderer is **llvmpipe**, you have still SW acceleration, but at least accelerated by SSE (128 bits) or AVX (256 bit). GPU acceleration is disabled or you real GPU isn't sporting HW acceleration.
   - If renderer is **softpipe**, you have SW acceleration and running on reference (but slow) renderer, SIMD ins't accesable somehow, or you on 95, where is softpipe renderer by default, even if SIMD hack is installed (more in Mesa9x documentation: https://github.com/JHRobotics/mesa9x).
   - If renderer is **Generic**, then ICD OpenGL DLL is not loaded. Something is wrong with system or you installed SSE instrumented binaries on no SSE enabled/supported guest.
   - If program can't start by missing `MSVCRT.DLL` install MSVCRT (part of Internet Explorer >= 4 too)
 - DirectX:
   - On 98 you can run **dxdiag** (Start -> Run -> type `dxdiag`) and check all tests
-  - On Me you can still run **dxdiag**, but you can only check DX8 and DX9, because we cannot easily replace system `DDRAW.DLL`. But DX6 and DX7 games should usually run without problems
-  - On 95 you can still run **dxdiag**, but if you run test, you only see black screens, but again, games (if supporting 95) games should usually run
+  - On Me you can still run **dxdiag**, but works only DX8 and DX9 tests, because we cannot easily replace system `DDRAW.DLL`. But DX6 and DX7 games should usually run without problems
+  - On 95 you can still run **dxdiag**, but if you run test, you only see black screens, but again, games (if supporting 95) games should usually run.
 
 #### AMD Zen, 11th Generation Intel Core and newer
 Newer CPU have excellent performance but needs some extra tune:

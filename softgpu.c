@@ -127,6 +127,7 @@ float rdpiY = 1.0;
 BOOL isNT    = FALSE;
 version_t sysver = {0};
 version_t dxver  = {0};
+version_t dxtarget = {0};
 BOOL     hasCRT = FALSE;
 BOOL     hasSETUPAPI = FALSE;
 uint32_t hasSSE3 = 0;
@@ -287,6 +288,15 @@ void softgpu_sysinfo()
 		version_parse(buf, &dxver);
 	}
 	
+	if(version_compare(&sysver, &WINVER98) >= 0)
+	{
+		version_parse(iniValue("[softgpu]", "dx9target"), &dxtarget);
+	}
+	else
+	{
+		version_parse(iniValue("[softgpu]", "dx8target"), &dxtarget);
+	}
+	
 	HMODULE testLib = LoadLibraryA("msvcrt.dll");
 	if(testLib != NULL)
 	{
@@ -301,7 +311,8 @@ void softgpu_sysinfo()
 		FreeLibrary(testLib);
 	}
 	
-	testLib = LoadLibraryA("ole32.dll");
+	/* ole32 is usually present, but for example "comcat.dll" not */
+	testLib = LoadLibraryA("comcat.dll");
 	if(testLib != NULL)
 	{
 		hasOle32 = TRUE;
@@ -346,7 +357,7 @@ HWND pathinput = INVALID_HANDLE_VALUE;
 
 static BOOL need_reboot = FALSE;
 
-void softgpu_done(HWND hwnd)
+void softgpu_done(HWND hwnd, BOOL reboot)
 {
 	if(installbtn != INVALID_HANDLE_VALUE)
 	{
@@ -356,11 +367,22 @@ void softgpu_done(HWND hwnd)
 	
 	SetWindowText(infobox, "SUCCESS!");
 	
-	int id = MessageBoxA(hwnd, "Installation complete! Reboot is required. Reboot now?", "Complete!", MB_YESNO | MB_ICONQUESTION);
-	if(id == IDYES)
+	if(reboot)
 	{
-		need_reboot = TRUE;
-		PostQuitMessage(0);
+		int id = MessageBoxA(hwnd, "Installation complete! Reboot is required. Reboot now?", "Complete!", MB_YESNO | MB_ICONQUESTION);
+		if(id == IDYES)
+		{
+			need_reboot = TRUE;
+			PostQuitMessage(0);
+		}
+	}
+	else
+	{
+		int id = MessageBoxA(hwnd, "Driver files copied successfully! Close installer now?", "Complete!", MB_YESNO | MB_ICONQUESTION);
+		if(id == IDYES)
+		{
+			PostQuitMessage(0);
+		}
 	}
 }
 
@@ -479,7 +501,17 @@ static void process_install()
 
 	if(isSettingSet(CHBX_GL95))
 	{
-		action_create("OpenGL95 install", gl95_start, NULL, NULL);
+		action_create("OpenGL95 installation", gl95_start, NULL, NULL);
+	}
+
+	if(isSettingSet(CHBX_DOTCOM))
+	{
+		action_create(".COM installation", dotcom_start, NULL, NULL);
+	}
+
+	if(isSettingSet(CHBX_WS2))
+	{
+		action_create("WS2 installation", ws2_start, NULL, NULL);
 	}
 
 	if(isSettingSet(CHBX_MSCRT))
@@ -576,7 +608,7 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 						DWORD sty = GetWindowLongA(installbtn, GWL_STYLE) | WS_DISABLED;
 						SetWindowLongA(installbtn, GWL_STYLE, sty);
 						
-						writeSettings(hwnd);
+						writeSettings();
 					}
 					process_install();
 					break;
@@ -611,8 +643,14 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 				case BTN_README:
 				{
 					char url[MAX_PATH] = "file:///";
-					size_t len = strlen(url);
+					size_t len;
 					size_t i;
+					
+					if(version_compare(&sysver, &WINVER98) < 0)
+					{
+						strcpy(url, "file:");
+					}
+					len = strlen(url);
 					
 					GetCurrentDirectory(MAX_PATH-len, url+len);
 					len = strlen(url);
@@ -621,6 +659,12 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 						if(url[i] == '\\')
 							url[i] = '/';
 					}
+					
+					if(url[i-1] == '/' || url[i-1] == '\\')
+					{
+						url[i-1] = '\0';
+					}
+					
 					strcat(url, "/softgpu.htm");
 					
 					softgpu_browser(url);
@@ -802,6 +846,7 @@ int main(int argc, const char *argv[])
   	checkInstallation();
   }
   
+  /* load system informations */
   softgpu_sysinfo();
   check_SW_HW();
     
@@ -843,7 +888,6 @@ int main(int argc, const char *argv[])
 
 	RegisterClass(&wc2);
 	
-	
 	// Get DPI for non 96 dpi displays
 	HDC hdc = GetDC(NULL);
 	if (hdc)
@@ -853,12 +897,12 @@ int main(int argc, const char *argv[])
 		ReleaseDC(NULL, hdc);
 	}
 	
+	/* init and calculate settings  */
 	settingsReset();
 	
 	font = CreateFontA(DPIX(16), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, NULL);
 
 	win_main = CreateWindowA(WND_SOFTGPU_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(600), DPIY(420), 0, 0, NULL, 0);
-	
 	win_cust = CreateWindowA(WND_SOFTGPU_CUR_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(300), DPIY(300), 0, 0, NULL, 0);
 
 	if(font)
@@ -868,6 +912,8 @@ int main(int argc, const char *argv[])
 	}
 	
 	ShowWindow(win_cust, SW_HIDE);
+	
+	SetForegroundWindow(win_main);	
 	
 	timer_proc(win_main);
 	
@@ -891,8 +937,8 @@ int main(int argc, const char *argv[])
   DestroyWindow(win_cust);
   DestroyWindow(win_main);
   
+  settingsFree();
   iniFree();
-  
   freeSETUAPI();
   
   if(need_reboot)

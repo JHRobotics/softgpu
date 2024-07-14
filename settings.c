@@ -33,9 +33,8 @@
 
 #include "nocrt.h"
 
+#define ST_DEF 0
 #define VRAM_DEF 128
-#define GMR_DEF  0
-
 #define DEFAULT_INST_PATH "C:\\drivers\\softgpu"
 
 #define T_CHECKBOX  1
@@ -60,14 +59,14 @@ typedef struct _settings_item_t
 static const settings_item_t settings_def[] = 
 {
 	{CHBX_MSCRT,           T_CHECKBOX,   0, "mscrt",    0, NULL, NULL, 0, 0},
-	{CHBX_DX,              T_CHECKBOX,   1, "dx",       1, NULL, NULL, 0, 0},
+	{CHBX_DX,              T_CHECKBOX,   1, "dxredist", 1, NULL, NULL, 0, 0},
 	{RAD_NORMAL,           T_RADIO,      2, "bin_mmx",  1, NULL, NULL, 1, 0},
 	{RAD_SSE,              T_RADIO,      3, "bin_sse",  0, NULL, NULL, 1, 0},
 	{RAD_SSE4,             T_RADIO,      4, "bin_sse4", 0, NULL, NULL, 1, 0},
 	{CHBX_GL95,            T_CHECKBOX,   5, "gl95",     0, NULL, NULL, 0, 0},
 	{CHBX_WINE,            T_CHECKBOX,   6, "wine",     1, NULL, NULL, 0, 0},
 	{CHBX_GLIDE,           T_CHECKBOX,   7, "glide",    1, NULL, NULL, 0, 0},
-	{CHBX_SIMD95,          T_CHECKBOX,   8, "simd95",   1, NULL, NULL, 0, 0},
+	{CHBX_SIMD95,          T_CHECKBOX,   8, "simd95",   0, NULL, NULL, 0, 0},
 	{CHBX_3DFX,            T_CHECKBOX,   9, "3dfx",     1, NULL, NULL, 0, 0},
 	{CHBX_FIXES,           T_CHECKBOX,  10, "fixes",    1, NULL, NULL, 0, 0},
 	{CHBX_QXGA,            T_CHECKBOX,  11, "res_qxga", 0, NULL, NULL, 0, 0},
@@ -85,8 +84,8 @@ static const settings_item_t settings_def[] =
 	{CHBX_BUG_DX_FLAGS,    T_CHECKBOX,  23, "dxflags",  0, NULL, NULL, 0, 0},
 	{LBX_PROFILE,          T_DROPDOWN,  24, "profile",  0, NULL, NULL, 0, 0},
 	{INP_PATH,             T_INPUT_STR, 25, "path",     0, DEFAULT_INST_PATH, NULL, 0, 0},
-	{INP_VRAM_LIMIT,       T_INPUT_NUM, 26, "vram",     128, NULL, NULL, 0, 0},
-	{INP_SCREENTARGET,     T_INPUT_NUM, 27, "screentarget_mb",    0, NULL, NULL, 0, 0},
+	{INP_VRAM_LIMIT,       T_INPUT_NUM, 26, "vram",     VRAM_DEF, NULL, NULL, 0, 0},
+	{INP_SCREENTARGET,     T_INPUT_NUM, 27, "screentarget_mb",    ST_DEF, NULL, NULL, 0, 0},
 	{CHBX_ST_16,           T_CHECKBOX,  28, "screentarget_16bpp", 0, NULL, NULL, 0, 0},
 	{CHBX_ST_MOUSE,        T_CHECKBOX,  29, "screentarget_mouse", 0, NULL, NULL, 0, 0},
 	{CHBX_ST_MOUSE_HIDE,   T_CHECKBOX,  30, "screentarget_mouse_hide", 0, NULL, NULL, 0, 0},
@@ -99,6 +98,8 @@ static const settings_item_t settings_def[] =
 };
 
 static settings_item_t settings_cur[sizeof(settings_def)/sizeof(settings_item_t)];
+
+static BOOL settings_cur_init = FALSE;
 
 static void settingClearGroup(int group)
 {
@@ -131,7 +132,6 @@ void settingsApply(HWND hwnd)
 				case T_CHECKBOX:
 					if(item->disabled)
 					{
-//						printf("%s -> disabled\n", item->name);
 						CheckDlgButton(hwnd, item->menu, BST_UNCHECKED);
 						LONG sty = GetWindowLongA(hItem, GWL_STYLE) | WS_DISABLED;
 						SetWindowLongA(hItem, GWL_STYLE, sty);
@@ -154,6 +154,9 @@ void settingsApply(HWND hwnd)
 					SetWindowTextA(hItem, inp);
 					break;
 				}
+				case T_INPUT_STR:
+					SetWindowTextA(hItem, item->svalue);
+					break;
 				case T_DROPDOWN:
 					SendMessage(hItem, (UINT)CB_SETCURSEL, (WPARAM)item->dvalue, (LPARAM)0);
 					break;
@@ -192,6 +195,24 @@ void settingsReadback(HWND hwnd)
 					if(GetWindowTextA(hItem, inp, 64) != 0)
 					{
 						item->dvalue = strtol(inp, NULL, 0);
+					}
+					break;
+				}
+				case T_INPUT_STR:
+				{
+					if(item->svalue_freeptr != NULL)
+					{
+						free(item->svalue_freeptr);
+						item->svalue_freeptr = NULL;
+						item->svalue = NULL;
+					}
+					
+					size_t s = GetWindowTextLengthA(hItem) + 1;
+					item->svalue_freeptr = malloc(s);
+					if(item->svalue_freeptr)
+					{
+						GetWindowTextA(hItem, item->svalue_freeptr, s);
+						item->svalue = item->svalue_freeptr;
 					}
 					break;
 				}
@@ -256,17 +277,6 @@ static BOOL have_3dfx_files()
 
 static void settingsCompute()
 {
-	version_t dxtarget;
-	
-	if(version_compare(&sysver, &WINVER98) >= 0)
-	{
-		version_parse(iniValue("[softgpu]", "dx9target"), &dxtarget);
-	}
-	else
-	{
-		version_parse(iniValue("[softgpu]", "dx8target"), &dxtarget);
-	}
-	
 	if(version_compare(&sysver, &WINVER98) < 0)
 	{
 		if(!hasOpengl)
@@ -291,14 +301,22 @@ static void settingsCompute()
 		settingsDisableByName("ws2",    1);
 	}
 	
-	if(!hasCRT)
+	if(!isNT)
 	{
-		settingsSetByName("mscrt", 1);
+		if(!hasCRT)
+		{
+			settingsSetByName("mscrt", 1);
+		}
+		
+		if(version_compare(&dxver, &dxtarget) < 0 || reinstall_dx)
+		{
+			settingsSetByName("dxredist", 1);
+		}
 	}
-	
-	if(version_compare(&dxver, &dxtarget) < 0 || reinstall_dx)
+	else
 	{
-		settingsSetByName("dx", 0);
+		settingsDisableByName("mscrt", 1);
+		settingsDisableByName("dxredist", 1);
 	}
 	
 	const char *drv_sse4 = iniValue("[softgpu]", "drvpath.sse4");
@@ -312,7 +330,7 @@ static void settingsCompute()
 		}
 		else if(version_compare(&sysver, &WINVER98) >= 0 && hasSSE3)
 		{
-			settingsSetByName("bin_sse3", 1);
+			settingsSetByName("bin_sse", 1);
 		}
 		else
 		{
@@ -325,7 +343,7 @@ static void settingsCompute()
 		
 		if(version_compare(&sysver, &WINVER98) >= 0 && hasSSE3)
 		{
-			settingsSetByName("bin_sse3", 1);
+			settingsSetByName("bin_sse", 1);
 		}
 		else
 		{
@@ -414,44 +432,93 @@ void settingsDisableByName(const char *name, int disabled)
 	}
 }
 
+/* free allocated strings */
+void settingsFree()
+{
+	settings_item_t *item;
+	
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		if(item->type == T_INPUT_STR)
+		{
+			if(item->svalue_freeptr != NULL)
+			{
+				free(item->svalue_freeptr);
+				item->svalue_freeptr = NULL;
+				item->svalue = NULL;
+			}
+		}
+	}
+}
+
+/* from last save something can change */
+static void settingsReEval()
+{	
+	if(hasOpengl)
+	{
+		settingsSetByName("gl95", 0);
+	}
+		
+	if(hasOle32)
+	{
+		settingsSetByName("dotcom", 0);
+	}
+		
+	if(hasWS2)
+	{
+		settingsSetByName("ws2", 0);
+	}
+	
+	if(hasCRT)
+	{
+		settingsSetByName("mscrt", 0);
+	}
+		
+	if(version_compare(&dxver, &dxtarget) >= 0 && reinstall_dx == FALSE)
+	{
+		settingsSetByName("dxredist", 0);
+	}
+}
+
 /* load default settings */
 void settingsReset()
 {
-	settings_item_t *item;
+	if(settings_cur_init)
+	{
+		settingsFree();
+	}
 	
 	memcpy(&settings_cur[0], &settings_def[0], sizeof(settings_def));
 	
 	settingsCompute();
 	
-	for(item = &settings_cur[0]; item->menu != 0; item++)
+	const char *defProfile = iniValue("[softgpu]", "default_profile");
+	if(defProfile != NULL)
 	{
-		const char *def = iniValue("[defaults]", item->name);
-		if(def != NULL)
-		{
-			int def_int = strtol(def, NULL, 0);
-			
-			switch(item->type)
-			{
-				case T_CHECKBOX:
-					item->dvalue = def_int;
-					break;
-				case T_RADIO:
-					if(def_int > 0)
-					{
-						settingClearGroup(item->group);
-						item->dvalue = def_int;
-					}
-					break;
-				case T_INPUT_STR:
-					item->svalue = def;
-					break;
-				case T_INPUT_NUM:
-				case T_DROPDOWN:
-					item->dvalue = def_int;
-					break;
-			}
-		}
+		DWORD p = strtoul(defProfile, NULL, 0);
+		settingsSetByName("profile", p);
+		settingsApplyProfile(p);
+		//printf("profile: %u\n", p);
 	}
+	else
+	{
+		settingsApplyProfile(0);
+	}
+	
+	const char *defPath = iniValue("[softgpu]", "default_path");
+	if(defPath != NULL)
+	{
+		settingsSetStr(INP_PATH, defPath, FALSE);
+	}
+	
+	/* read from registry first time */
+	if(!settings_cur_init)
+	{
+		readSettings();
+		settingsReEval();
+	}
+	
+	settings_cur_init = TRUE;
 }
 
 BOOL isSettingSet(DWORD menu)
@@ -493,25 +560,160 @@ DWORD settingReadDW(DWORD menu)
 	return 0;
 }
 
-void writeSettings(HWND hwnd)
-{/*
-	const settings_item_t *s;
-	
-	DWORD new_data = 0;
-	
-	for(s = &settings[0]; s->menu != 0; s++)
+const char *settingsReadStr(DWORD menu)
+{
+	settings_item_t *item;
+	for(item = &settings_cur[0]; item->menu != 0; item++)
 	{
-		BOOL b = IsDlgButtonChecked(hwnd, s->menu);
-		if(s->negate) b = !b;
-		
-		if(!b)
+		if(item->menu == menu)
 		{
-			new_data |= 1 << s->pos;
+			switch(item->type)
+			{
+				case T_INPUT_STR:
+					return item->svalue;
+			}
 		}
 	}
 	
-	registryWriteDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup_" SOFTGPU_STR(SOFTGPU_BUILD), new_data);
+	return NULL;
+}
+
+void settingsSetStr(DWORD menu, const char *str, BOOL copy)
+{
+	settings_item_t *item;
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		if(item->menu == menu)
+		{
+			switch(item->type)
+			{
+				case T_INPUT_STR:
+					if(item->svalue_freeptr != NULL)
+					{
+						free(item->svalue_freeptr);
+						item->svalue_freeptr = NULL;
+						item->svalue = NULL;
+					}
+					
+					if(!copy)
+					{
+						item->svalue = str;
+					}
+					else
+					{
+						size_t s = strlen(str) + 1;
+						item->svalue_freeptr = malloc(s);
+						if(item->svalue_freeptr)
+						{
+							memcpy(item->svalue_freeptr, str, s);
+							item->svalue = item->svalue_freeptr;
+						}
+					}
+					break;
+			}
+		}
+	}
+}
+
+#define MAX_CONF_DW 4
+
+#define KEYNAME_FMT "HKCU\\SOFTWARE\\SoftGPU\\setup-%d\\%s"
+
+void writeSettings()
+{
+	char keyname[MAX_PATH];
+	DWORD confdw[MAX_CONF_DW];
 	
-	registryWriteDWORD("HKCU\\SOFTWARE\\SoftGPU\\setup_vram_" SOFTGPU_STR(SOFTGPU_BUILD), GetInputInt(hwnd, INP_VRAM_LIMIT));
-	*/
+	memset(&confdw[0], 0, sizeof(confdw));
+	
+	settings_item_t *item;
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		switch(item->type)
+		{
+			case T_CHECKBOX:
+			case T_RADIO:
+				DWORD p = item->pos / 32;
+				DWORD i = item->pos % 32;
+				if(item->dvalue > 0)
+				{
+					confdw[p] |= (1 << i);
+				}
+				break;
+			case T_INPUT_NUM:
+			case T_DROPDOWN:
+				sprintf(keyname, KEYNAME_FMT, SOFTGPU_BUILD, item->name);
+				registryWriteDWORD(keyname, item->dvalue);
+				break;
+			case T_INPUT_STR:
+				sprintf(keyname, KEYNAME_FMT, SOFTGPU_BUILD, item->name);
+				registryWrite(keyname, item->svalue, WINREG_STR);
+				break;
+		}
+	}
+	
+	int j;
+	for(j = 0; j < MAX_CONF_DW; j++)
+	{
+		sprintf(keyname, KEYNAME_FMT "%02d", SOFTGPU_BUILD, "cfg", j);
+		registryWriteDWORD(keyname, confdw[j]);
+	}
+}
+
+BOOL readSettings()
+{
+	char keyname[MAX_PATH];
+	char value[MAX_PATH];
+	DWORD confdw[MAX_CONF_DW];
+	
+	int j;
+	for(j = 0; j < MAX_CONF_DW; j++)
+	{
+		sprintf(keyname, KEYNAME_FMT "%02d", SOFTGPU_BUILD, "cfg", j);
+		if(!registryReadDWORD(keyname, &confdw[j]))
+		{
+			return FALSE;
+		}
+	}
+	
+	settings_item_t *item;
+	for(item = &settings_cur[0]; item->menu != 0; item++)
+	{
+		switch(item->type)
+		{
+			case T_CHECKBOX:
+			case T_RADIO:
+				DWORD p = item->pos / 32;
+				DWORD i = item->pos % 32;
+				item->dvalue = (confdw[p] >> i) & 0x1;
+				break;
+			case T_INPUT_NUM:
+			case T_DROPDOWN:
+				sprintf(keyname, KEYNAME_FMT, SOFTGPU_BUILD, item->name);
+				registryReadDWORD(keyname, &item->dvalue);
+				break;
+			case T_INPUT_STR:
+				sprintf(keyname, KEYNAME_FMT, SOFTGPU_BUILD, item->name);
+				if(registryRead(keyname, value, MAX_PATH))
+				{
+					if(item->svalue_freeptr != NULL)
+					{
+						free(item->svalue_freeptr);
+						item->svalue_freeptr = NULL;
+						item->svalue = NULL;
+					}
+					
+					size_t s = strlen(value)+1;
+					item->svalue_freeptr = malloc(s);
+					if(item->svalue_freeptr)
+					{
+						memcpy(item->svalue_freeptr, value, s);
+						item->svalue = item->svalue_freeptr;
+					}
+				}
+				break;
+		}
+	}
+	
+	return TRUE;
 }

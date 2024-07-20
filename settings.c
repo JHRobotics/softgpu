@@ -93,7 +93,7 @@ static const settings_item_t settings_def[] =
 	{CHBX_WS2,             T_CHECKBOX,  32, "ws2",      0, NULL, NULL, 0, 0},
 	{CHBX_BLIT_SURF,       T_CHECKBOX,  33, "blit_surf", 0, NULL, NULL, 0, 0},
 	{CHBX_DMA_NEED_REREAD, T_CHECKBOX,  34, "dma_need_reread", 1, NULL, NULL, 0, 0},
-	
+	{CHBX_MESA_DOWNGRADE,  T_CHECKBOX,  35, "mesa_downgrade",  1, NULL, NULL, 0, 0},
 	{0,                    0,            0, NULL,        0, NULL, NULL, 0, 0}
 };
 

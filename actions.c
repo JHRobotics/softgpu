@@ -1018,13 +1018,30 @@ BOOL setLine3DFX(char *buf, size_t bufs)
 	return TRUE;
 }
 
+BOOL setMesaDowngrade(char *buf, size_t bufs)
+{
+	(void)bufs;
+	
+	if(isSettingSet(CHBX_MESA_DOWNGRADE))
+	{
+		const char *mesadir = iniValue("[softgpu]", "mesa_alt");
+		if(mesadir)
+		{
+			strcat(buf, ",");
+			strcat(buf, mesadir);
+		}
+	}
+	
+	return TRUE;
+}
+
 linerRule_t infFixRules[] = {
 	{"CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",   TRUE, TRUE, setLineVbox},
 	{"CopyFiles=VMSvga.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy", TRUE, TRUE, setLineSvga},
 	{"CopyFiles=Qemu.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",   TRUE, TRUE, setLineQemu},
-	{"AddReg=VBox.AddReg,VM.AddReg,DX.addReg,VM.regextra",                  TRUE, TRUE, setLineVboxReg},
-	{"AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg,VM.regextra",                TRUE, TRUE, setLineSvgaReg},
-	{"AddReg=Qemu.AddReg,VM.AddReg,DX.addReg,VM.regextra",                  TRUE, TRUE, setLineQemuReg},
+	{"AddReg=VBox.AddReg,VM.AddReg,DX.addReg,VM.regextra",      TRUE, TRUE, setLineVboxReg},
+	{"AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg,VM.regextra",    TRUE, TRUE, setLineSvgaReg},
+	{"AddReg=Qemu.AddReg,VM.AddReg,DX.addReg,VM.regextra",      TRUE, TRUE, setLineQemuReg},
 	{"HKLM,Software\\VMWSVGA,RGB565bug,,0",                     TRUE, TRUE, setBug565},
 	{"HKLM,Software\\VMWSVGA,PreferFIFO,,0",                    TRUE, TRUE, setBugPreferFifo},
 	{"HKLM,Software\\Mesa3D\\global,SVGA_CLEAR_DX_FLAGS,,1",    TRUE, TRUE, setBugDxFlags},
@@ -1032,6 +1049,8 @@ linerRule_t infFixRules[] = {
 	{";mefix:",                                                FALSE, TRUE, setLineMeFix},
 	{";syscopy:",                                              FALSE, TRUE, setLineSyscopy},
 	{";3dfx:",                                                 FALSE, TRUE, setLine3DFX},
+	{"mesa3d.dll=1",                                            TRUE, TRUE, setMesaDowngrade},
+	{"vmwsgl32.dll=1",                                          TRUE, TRUE, setMesaDowngrade},
 	{NULL, FALSE, FALSE, NULL}
 };
 

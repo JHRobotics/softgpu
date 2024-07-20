@@ -321,12 +321,19 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	int draw_y = 0;
 	int draw_direction = 0;
 	
-	DRAW_DIRECTION_DOWN;
-	
+	DRAW_DIRECTION_RIGHT;
 	draw_x = DRAW_START_X;
 	draw_y = DRAW_START_Y;
 	
-	LABEL(0, 160, LINE_HEIGHT, "Extra settings", 0);
+	LABEL(0,             200, LINE_HEIGHT, "VRAM limit (MB): ", 0);
+	INPUT(INP_VRAM_LIMIT, 50, LINE_HEIGHT, "", 0);
+	
+	draw_x = DRAW_START_X;
+	draw_y += 2*LINE_HEIGHT;
+	
+	DRAW_DIRECTION_DOWN;
+	
+	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "SVGA settings", 0);
 	
 	CHECKBOX(CHBX_BLIT_SURF,           CUST_WIDTH,   LINE_HEIGHT, "Blit surface to screen (VBox)");
 	CHECKBOX(CHBX_DMA_NEED_REREAD,     CUST_WIDTH,   LINE_HEIGHT, "DMA need reread (VBox)");
@@ -335,12 +342,13 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	CHECKBOX(CHBX_BUG_PREFER_FIFO,     CUST_WIDTH,   LINE_HEIGHT, "Prefer FIFO (VMware)");
 	CHECKBOX(CHBX_BUG_RGB565,          CUST_WIDTH,   LINE_HEIGHT, "RGB565 (VBox < 7.0.10, < 6.1.46)");
 	
-	DRAW_DIRECTION_RIGHT;
-	LABEL(0,             200, LINE_HEIGHT, "VRAM limit (MB): ", 0);
-	INPUT(INP_VRAM_LIMIT, 50, LINE_HEIGHT, "", 0);
+	CHECKBOX(CHBX_MESA_DOWNGRADE,      CUST_WIDTH,   LINE_HEIGHT, "Downgrade Mesa3D (VMware)");
 	
-	draw_x = DRAW_START_X;
 	draw_y += LINE_HEIGHT;
+	
+	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "SVGA screen target (experimental)", 0);
+	
+	DRAW_DIRECTION_RIGHT;
 	
 	LABEL(0,               200, LINE_HEIGHT, "Screen target surface (MB): ", 0);
 	INPUT(INP_SCREENTARGET, 50, LINE_HEIGHT, "", 0);

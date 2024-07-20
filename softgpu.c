@@ -729,6 +729,10 @@ LRESULT CALLBACK softgpuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
 			{
 				switch(detection_status())
 				{
+					case DETECT_OK:
+						SetTextColor((HDC)wParam, RGB(0x00,0x80,0x00));
+     				SetBkMode((HDC)wParam, TRANSPARENT);
+    				return GetClassLong(hwnd, GCL_HBRBACKGROUND);
 					case DETECT_WARN:
 						SetTextColor((HDC)wParam, RGB(255,128,64));
      				SetBkMode((HDC)wParam, TRANSPARENT);
@@ -903,7 +907,7 @@ int main(int argc, const char *argv[])
 	font = CreateFontA(DPIX(16), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, NULL);
 
 	win_main = CreateWindowA(WND_SOFTGPU_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(600), DPIY(420), 0, 0, NULL, 0);
-	win_cust = CreateWindowA(WND_SOFTGPU_CUR_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(300), DPIY(300), 0, 0, NULL, 0);
+	win_cust = CreateWindowA(WND_SOFTGPU_CUR_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(300), DPIY(400), 0, 0, NULL, 0);
 
 	if(font)
 	{

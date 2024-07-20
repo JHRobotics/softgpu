@@ -103,6 +103,8 @@
 #define CHBX_BLIT_SURF 47
 #define CHBX_DMA_NEED_REREAD 48
 
+#define CHBX_MESA_DOWNGRADE 49
+
 BOOL isSettingSet(DWORD menu);
 void writeSettings();
 int intSettings(int type);

@@ -93,6 +93,25 @@ General instruction for most machines:
 
 Windows 95 haven't [Setup API](https://learn.microsoft.com/en-us/windows/win32/api/setupapi/), or if has, it isn't fully operable. This is reason why SoftGPU cannot install driver automatically.
 
+Before installation you have to enable TCP/IP because Winsock 2 depends on that and LLVM in Mesa depends on Winsock. You can do it on *Control panel*, *Network*, add *Protocol* and choose *Microsoft* and *TCP/IP*.
+
+![Windows 95 TCP/IP](resource/docs/win95ip.png)
+
+After it you can run SoftGPU, when press **Start!**, program will install all dependencies and configure and copy files but not install driver itself.
+
+After SoftGPU installer is done. Open Device Manager (right click on *My Computer*, *Device Manager*). Find VGA adapter and click on *Properties...*, tab *Driver*, *Change driver...*, *Have disk...*, navigate to SoftGPU installation folder and click on *OK*.
+
+Now you have to choose correct driver:
+
+![Windows 95 driver choice](resource/docs/win95driver3.png)
+
+- QEMU STD VGA PCI Adapter = for QEMU with **std vga** adapter
+- VBox SVGA PCI Adapter = for VirtualBox when selected `VBoxSVGA` as Graphics Controller.
+- VBox VGA PCI Adapter = for VirtualBox when selected `VBoxVGA` as Graphics Controller or VirtualBox 5.x
+- VMWare SVGA-II PCI Adapter = for VirtualBox when selected `VMSVGA` as Graphics Controller or VMware Workstation.
+
+Press *OK*, *OK* and after reboot, VM should start with the new driver.
+
 
 ## Update
 If you have an older version of SoftGPU installed, you can update without any problem: insert the CD with the latest version into the VM and click install. The installer will take care of all the necessary modifications, only to increase compatibility it is necessary to do some steps manually:

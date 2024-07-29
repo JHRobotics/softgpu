@@ -218,10 +218,10 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	
 	// BUGS
 	DRAW_DIRECTION_RIGHT;
-	LABEL(0,                120, LINE_HEIGHT, "Hypervisor preset:", 0);
+	LABEL(0,                140, LINE_HEIGHT, "Hypervisor preset:", 0);
 	
 	// profiles
-	DROPDOWN(LBX_PROFILE, LINE_WIDTH, LINE_HEIGHT, 10, 0);
+	DROPDOWN(LBX_PROFILE, LINE_WIDTH+LINE_QWIDTH, LINE_HEIGHT, 10, 0);
 	
 	HWND profile = GetDlgItem(hwnd, LBX_PROFILE);
 	if(profile != NULL)
@@ -329,7 +329,7 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	INPUT(INP_VRAM_LIMIT, 50, LINE_HEIGHT, "", 0);
 	
 	draw_x = DRAW_START_X;
-	draw_y += 2*LINE_HEIGHT;
+	draw_y += LINE_HEIGHT + LINE_HL;
 	
 	DRAW_DIRECTION_DOWN;
 	
@@ -344,7 +344,16 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	
 	CHECKBOX(CHBX_MESA_DOWNGRADE,      CUST_WIDTH,   LINE_HEIGHT, "Downgrade Mesa3D (VMware)");
 	
+	CHECKBOX(CHBX_NO_MULTISAMPLE,      CUST_WIDTH,   LINE_HEIGHT, "Disable multisample (VMware)");
+	
+	DRAW_DIRECTION_RIGHT;
+	LABEL(0,             200, LINE_HEIGHT, "Async MOBs: ", 0);
+	INPUT(INP_ASYNCMOBS,  50, LINE_HEIGHT, "", 0);
+	draw_x = DRAW_START_X;
 	draw_y += LINE_HEIGHT;
+	DRAW_DIRECTION_DOWN;
+	
+	draw_y += LINE_HL;
 	
 	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "SVGA screen target (experimental)", 0);
 	
@@ -359,6 +368,7 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	
 	CHECKBOX(CHBX_ST_16,    CUST_WIDTH, LINE_HEIGHT, "Screen target for 16bpp");
 	CHECKBOX(CHBX_ST_MOUSE, CUST_WIDTH, LINE_HEIGHT, "Screen target accelerated mouse");
+	CHECKBOX(CHBX_ST_MOUSE_HIDE, CUST_WIDTH, LINE_HEIGHT, "Screen target mouse hide");
 	
 	settingsApply(hwnd);
 }

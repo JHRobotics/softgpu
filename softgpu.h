@@ -104,6 +104,8 @@
 #define CHBX_DMA_NEED_REREAD 48
 
 #define CHBX_MESA_DOWNGRADE 49
+#define CHBX_NO_MULTISAMPLE 50
+#define INP_ASYNCMOBS 51
 
 BOOL isSettingSet(DWORD menu);
 void writeSettings();

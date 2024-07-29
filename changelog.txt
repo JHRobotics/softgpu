@@ -1,3 +1,27 @@
+0.6.2024.36
+! fixed missing non English chars
+! VMWare vGPU10 support
+! fixed memory waste when allocating large regions
+! better handling out-of-memory errors
+! profiles for different hypervisors
+- Better HW detection
+- Driver: fixed race-conditional bugs
+- Driver: SVGA screen target support
+- Driver: Smooth font support
+- Driver: driver version reporting to HV
+- Driver: better VMware support
+- Mesa/SVGA: better memory limitation
+- Mesa/SVGA: screen target support (vGPU10, VBox only)
+- Mesa/SVGA: OpenGL 4.1 (vGPU10, VBox), 4.3 (vGPU10, VMware)
+- Mesa/SVGA: better compatibility detection
+- Mesa/LLVMpipe: LLVM 18.1.8
+- Mesa/LLVMpipe: OpenGL 4.5
+- Mesa/Nine: fixed diffuse lights
+- Mesa: faster readpixels
+- Wine: S3TC support (by @hpvb)
+- Wine: explorer, iexplore blacklisted
+- Increased compatibility list
+
 0.5.2024.29
 ! Wine works on Windows 95
 ! OpenGlide works with MiniGL wrappers

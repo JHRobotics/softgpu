@@ -6,10 +6,11 @@ SoftGPU is pack of driver, wrappers, and system components to make 3D accelerati
 ### Hypervisor
 - For maximum HW 3D feature support:
 	- Oracle VirtualBox 7.0 
+	- VMware Workstation 17.5
 - HW 3D acceleration without pixel shader support:
 	- Oracle VirtualBox 6.1
-	- VMWare Workstation 16.x - 17.x
-	- VMWare Player 16.x - 17.x
+	- VMWare Workstation 16.x - 17.x (VM compatibility 9.x)
+	- VMWare Player 16.x - 17.x (VM compatibility 9.x)
 - 3D pass-through
 	- QEMU 6.x - 8.x + [QEMU 3Dfx](https://github.com/kjliew/qemu-3dfx)
 - SW 3D acceleration
@@ -63,7 +64,7 @@ Supported by VMware and VirtualBox 6.1 and 7.0, mainly designed for accelerate D
 
 #### SVGA3D gen.10 (vGPU10)
 
-Supported only in VirtualBox 7.0. (On VMware is theoretically supported too, but I'm currently not able to turn on it for Windows 9x guest). This is designed for Windows 10 for DirectX 11/12 support - DirectX 12 can emulate all older DX variant and native DDI isn't needed (but this works only on W7 and W10/W11).
+Supported in VirtualBox 7.0. and VMware. This is designed for Windows 10 for DirectX 11/12 support - DirectX 12 can emulate all older DX variant and native DDI isn't needed (but this works only on W7 and W10/W11).
 
 DX8/DX9/OpenGL Shader are supported, and most DX 9 games works, OpenGL rendering in games is faster than with vGPU9. This is actually most preferred way to use with SoftGPU. Disadvantage of using vGPU10 is that all textures are stored in VM RAM so you need more RAM to attach to VM. 512 MB RAM is minimum recommended value for vGPU10 and for Windows 9x is value also maximum recommended without additional patches.
 
@@ -190,7 +191,7 @@ REGEDIT4
 "SVGA_MEM_MAX"="700"
 ```
 
-Physical maximum is 1024 MB, around 800-900 should work. But be careful, more space is not equal to speed or stability.
+Physical maximum is 1024 MB, around 800-900 should work. But be careful, more space is not equal to speed or stability. Note than in VMware software GMR can be less fragmented than in VirtualBox, note also that Windows 9x allocating continual physical space very ineffectively.
 
 
 ## Registry configuration
@@ -216,11 +217,31 @@ REGEDIT4
 ; You turn off for VirtualBox, bud vGPU9 is slightly waster
 ; when using FIFO. This option have no effect to vGPU10
 "PreferFIFO"=dword:00000001
+;
+; Disable multisampling (antialiasing) support, for example
+; on VMware GPU10 where it's not working properly.
+"NoMultisample"=dword:00000001
 
 [HKEY_LOCAL_MACHINE\Software\Mesa3D\global]
-;
-;
+; VirtualBox 7.0.14 and older has broken some DirectX flags,
+; this fix it.
 "SVGA_CLEAR_DX_FLAGS"="1"
+;
+; Hard FPS limit, not precise, value 80 equals real ~60 FPS
+"FRAMERATE_LIMIT"=80
+;
+; Allow rendering by SVGA_3D_CMD_BLIT_SURFACE_TO_SCREEN
+; SVGA command. Works only in VirtualBox, improve speed.
+"SVGA_BLIT_SURF_TO_SCREEN"=1
+;
+; VirtualBox has bug, when DMA operation with VRAM not
+; refresh host frame buffer, in 16bpp also not working
+; refreshing command, so only option is read and write
+; VRAM back by CPU or use offscreen rendering with
+; software blit. Can be disabled on VMware to
+; improve 16bpp rendering.
+"SVGA_DMA_NEED_REREAD"=0
+
 ```
 
 
@@ -257,6 +278,25 @@ REGEDIT4
 ; set 0 to disable command buffer support, use FIFO instead.
 ; For debug only.
 "CommandBuffers"=dword:00000001
+; 
+; Allow parallel creation of memory objects (like textures or vertex buffers)
+; without sync GPU between them. Not recommended now, vGPU can be unstable with this.
+"AsyncMOBs"=dword:00000004
+;
+; Screen target surface size (in MB). Virtual frame buffer is normally periodically
+; or on demand copied do host memory and then copied to GPU or render pure by software.
+; This option create system frame buffer as GPU surface. 3D operation are faster,
+; but software operation slower. Very experimental.
+;
+"STSize"=dword:00000040
+;
+; Bitfield to configure screen target usage, flags
+; 0x01 - screen target usage for 16bpp screen. This allow screen acceleration on 16bpp
+;        but not supported by VirtualBox now
+; 0x02 - accelerate mouse cursor (currently broken in VirtualBox)
+; 0x04 - fast show and hide cursor commands (bugged in VirtualBox)
+;
+"STOptions"=dword:00000002
 
 ```
 

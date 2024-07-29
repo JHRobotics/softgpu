@@ -1153,6 +1153,9 @@ BOOL set_inf_regs(HWND hwnd)
 	registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\SVGA_BLIT_SURF_TO_SCREEN", settingReadDW(CHBX_BLIT_SURF),       dstfile);
 	registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\SVGA_DMA_NEED_REREAD",     settingReadDW(CHBX_DMA_NEED_REREAD), dstfile);
 	
+	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\NoMultisample", settingReadDW(CHBX_NO_MULTISAMPLE), dstfile);
+	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\AsyncMOBs",     settingReadDW(INP_ASYNCMOBS), dstfile);
+	
 	return TRUE;
 }
 

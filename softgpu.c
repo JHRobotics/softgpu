@@ -58,18 +58,18 @@ void about(HWND hwnd)
 		"Components\n"
 		"VMDisp9x: %s\n"
 		"Mesa9x: %s\n"
-		/*"Mesa9x (SSE): %s\n"*/
+		"Mesa9x (alt.): %s\n"
 		"Wine9x: %s\n"
 		"OpenGlide9x: %s\n"
 		"SIMD95: %s\n\n"
 		"more on: https://github.com/JHRobotics/softgpu\n",
 		SOFTGPU_VERSION_STR,
-		iniValue("[version]", "vmdisp9x"),
-		iniValue("[version]", "mesa9x"),
-		/*iniValue("[version]", "mesa9x_sse"),*/
-		iniValue("[version]", "wine9x"),
-		iniValue("[version]", "openglide9x"),
-		iniValue("[version]", "simd95")
+		iniValueDef("[version]", "vmdisp9x", "-"),
+		iniValueDef("[version]", "mesa9x_main", "-"),
+		iniValueDef("[version]", "mesa9x_alt", "-"),
+		iniValueDef("[version]", "wine9x", "-"),
+		iniValueDef("[version]", "openglide9x", "-"),
+		iniValueDef("[version]", "simd95", "-")
 	);
 	
 	MessageBoxA(hwnd, txtbuf, "About SoftGPU", MB_OK);
@@ -904,7 +904,7 @@ int main(int argc, const char *argv[])
 	/* init and calculate settings  */
 	settingsReset();
 	
-	font = CreateFontA(DPIX(16), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, NULL);
+	font = CreateFontA(DPIY(16), 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, NULL);
 
 	win_main = CreateWindowA(WND_SOFTGPU_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(600), DPIY(420), 0, 0, NULL, 0);
 	win_cust = CreateWindowA(WND_SOFTGPU_CUR_CLASS_NAME, WINDOW_TITLE, SOFTGPU_WIN_STYLE|WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, DPIX(300), DPIY(400), 0, 0, NULL, 0);
@@ -947,7 +947,7 @@ int main(int argc, const char *argv[])
   
   if(need_reboot)
   {
-  	ExitWindowsEx(EWX_REBOOT | EWX_FORCE, SHTDN_REASON_MAJOR_HARDWARE | SHTDN_REASON_MINOR_INSTALLATION);
+  	ExitWindowsEx(EWX_REBOOT, SHTDN_REASON_MAJOR_HARDWARE | SHTDN_REASON_MINOR_INSTALLATION);
   }
   
   /* SHGetPathFromIDListA creates some co-threads, this kill them too */

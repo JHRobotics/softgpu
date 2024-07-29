@@ -54,7 +54,7 @@ Not all renderers supporting all application/games, performance expectation is i
 | llvmlipe (128 bits) |     SSE        |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     4.5        |  ✔               |  ✔         |  ✔   |    ❌     |    10-15     |
 | llvmlipe (256 bits) |   SSE, AVX     |  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     4.5        |  ✔               |  ✔         |  ✔   |    ❌     |    12-20     |
 | SVGA3D              | SVGA-II (gen9) |  ✔  |      ❌     |  ✔  |      ❌     |  ✔   |   ✔   |     2.1        |  ⚠               |  ✔         |  ✔   |    ❌     |    30-100     |
-| SVGA3D              | SVGA-II (gen10)|  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     4.1        |  ✔               |  ✔         |  ✔   |    ❌     |    30-80     |
+| SVGA3D              | SVGA-II (gen10)|  ✔  |      ✔     |  ✔  |      ✔     |  ✔   |   ✔   |     3.3-4.3        |  ✔               |  ✔         |  ✔   |    ❌     |    30-80     |
 | qemu-3dfx           | [qemu-3dfx](https://github.com/kjliew/qemu-3dfx) |  ✔  |      ✔     |  ✔               |  ✔         |   ✔  |      ✔     |     native        |  ❌   |   ❌   |  ✔ *   |    ✔ *     |    native/2 *  |
 
 (*) Note for qemu-3dfx: performance depends on CPU emulation - you can reach about 1/2 of native GPU performance when using KVM acceleration on x86-64 host, about 1/5 when using Hyper-V, and about from 1/100 when is using accelerated emulation and about 1/1000 when using full emulation. DOS Glide and *native* Glide wrapper isn't part of SoftGPU. You have to compile it from source or you can [donate qemu-3dfx author](https://github.com/kjliew/qemu-3dfx#donation).
@@ -68,8 +68,24 @@ Hypervisor translation to real HW GPU:
 | softpipe        |   framebuffer   | all                |
 | llvmlipe        |   framebuffer   | all                |
 | SVGA3D (gen 9)  | DX9/OpenGL 2.1  | VirtualBox 6+7, VMware Workstation |
-| SVGA3D (gen 10) | DX11/Vulkan     | VirtualBox 7       |
+| SVGA3D (gen 10) | DX11/Vulkan     | VirtualBox 7, VMware Workstation   |
 | qemu-3dfx       | native OpenGL   | QEMU with qemu-3dfx patch|
+
+
+VMware Virtual Machine HW compatibility:
+
+| Level    | GPU generation | OpenGL version | HW 3D in SoftGPU |
+| :------- |:-------------: | :------------- | :--------------- |
+| 17.x     | vGPU10         | 4.1, 4,3       | ✔                |
+| 16.x     | vGPU10         | 4.1            | ✔                |
+| ESXi 7.0 | vGPU10         | 3.3            | ✔                |
+| 15.x     | vGPU10         | 3.3            | ✔                |
+| 14.x     | vGPU10         | 3.3            | ✔                |
+| ESXi 6.5 | vGPU10         | 3.3            | ✔                |
+| 12.x     | vGPU10         | 3.3            | ✔                |
+| 11.x     | vGPU10         | -              | ❌               |
+| 10.x     | vGPU9          | 2.1            | ✔                |
+| 9.x      | vGPU9          | 2.1            | ✔                |
 
 
 ## Download
@@ -84,8 +100,10 @@ General instruction for most machines:
 3) [optional] install **PATCHMEM by rloew** and increase VM memory (1024 MB is usually enough)
 4) [optional] install audio drivers ([the most common drivers are below](#extra-drivers))[^1]
 5) Run setup with `softgpu.exe`
-6) [optional] Install additional drivers, for example USB (if you added USB controller)
-7) Have fun!
+6) Select *Hypervisor preset* to match your VM software
+7) Press *Install!*
+8) [optional] Install additional drivers, for example USB (if you added USB controller)
+9) Have fun!
 
 [^1]: Do this before install/update DirectX redistributable, because audio drivers usually overwrite DX files with outdated versions.
 
@@ -188,11 +206,11 @@ Here are some brief steps for individual virtualisation software:
 10) Insert SoftGPU iso (can be downloaded in Releases) and run `softgpu.exe`
 11) Select profile match to your VirtualBox version
 
-![SoftGPU profile selection](resource/docs/profile.png)
+![SoftGPU profile selection](resource/docs/profileb.png)
 
 12) Click on *Install!*
 13) You maybe need some reboots (after MSVCRT and DX installation) and run `softgpu.exe` again.
-14) After complete and final reboot system should start in 640x480 in 256 colours
+14) After complete and final reboot system should start in 640x480 in 256 colours or in 32-bit colours.
 15) Right click on desktop, Properties -> Settings and set the resolution (which you wish for) and colours:
 - to 32 bits for 98/Me, because only in 32 bit real HW screen acceleration works and applications are much faster
 - to 16 bits for 95, because 95 can't set colour depth on runtime (reboot is required) and lots of old applications can't start in 32 bits (all Glide for example)
@@ -220,7 +238,7 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/TM/TSCTiedToExecution" 1
 VBoxManage modifyvm "My Windows 98" --cpu-profile "AMD Ryzen 7 1800X Eight-Core"
 ```
 
-### vGPU9 vs. vGPU10
+#### vGPU9 vs. vGPU10
 
 There are 2 variant of graphical HW acceleration in VirtualBox 7:
 
@@ -249,25 +267,23 @@ VBoxManage setextradata "My Windows 98" "VBoxInternal/Devices/vga/0/Config/VMSVG
 
 
 ### VMware Workstation setup with HW acceleration
-SoftGPU with HW acceleration was tested only with lasted version of VMware Workstation (17.0.0 build-20800274), if you'll be successful with older version or free VMware player, please let me know.
+SoftGPU with HW acceleration was tested only with lasted version of VMware Workstation (17 and 17.5), if you'll be successful with older version or free VMware player, please let me know.
 
 #### General information
 - Use **Windows 98 SE**, newer Mesa is not currently working in 95 and Windows 98 FE (first edition) hasn't supporting WDM sound cards so you might have a problem with sound.
 - **Fresh install**, Windows 9x doesn't like hardware changes and if you import import VM from somewhere, strange problems may occur.
-- **no VMware additions**, ~because they only contain basic display driver,~ contain mouse integration driver and tray program which **is replacing display driver to VMware default display driver** [and some integration utilities](https://github.com/JHRobotics/softgpu/issues/14).  If you want mouse integration driver (but is useless for gaming with mouse) alone driver is [listed below](#extra-drivers).
-- set as hardware compatibility **Workstation 9.x** and VM type **Windows 2000 Server**. VMware in other cases is comparing installed addition tools version and features with hypervisor version and if they don't match refuses to expose SVGA 3D commands to guest.
+- SoftGPU is now partly compatible with **VMware additions**, when you decided to install it, please uncheck "SVGA driver".
+- (optional) set as hardware compatibility to **Workstation 9.x** for vGPU9 or leave it on default level for vGPU10.
 
 #### Step by step guide
 1) Create new VM - from menu File->New Virtual Machine
 2) In wizard choose *Custom (advanced)* click on next:
-  - As *Hardware compatibility* select **Workstation 9.x** (important)
-
-![](resource/docs/vmw-setup-1.png)
-
+  - For **vGPU9** in *Hardware compatibility* select **Workstation 9.x**
+  - For **vGPU10** leave *Hardware compatibility* on default choice.
   - Select *I will install the operating system later.*
-  - As *Guest operating system* choice **Microsoft Windows** and as *Version* select **Windows 2000 Server** (important)
+  - As *Guest operating system* choice **Microsoft Windows** and as *Version* select **Windows 98** (this is optional, driver itself reporting system version)
 
-![](resource/docs/vmw-setup-2.png)
+![](resource/docs/vmw-setup-2b.png)
 
   - Type VM name and number of processors keep on *1*
   - Set the memory to 512 MB (but without additional patches not more!)
@@ -281,7 +297,7 @@ SoftGPU with HW acceleration was tested only with lasted version of VMware Works
 ![](resource/docs/vmw-setup-3.png)
 
   - click on *USB Controller* and set *USB compatibility* to **USB 1.1** or remove USB controller completely
-  - click on *Display* but make sure, that **Accelerate 3D graphics** is turned **off** for installation = VMWare 7.x is painfully slow on 4/8-bit mode when is 3D acceleration enabled. So, turn in off for installation and turn in on after SoftGPU is installed.
+  - click on *Display* but make sure, that **Accelerate 3D graphics** is turned **off** for installation = VMware 17.x is painfully slow on 4/8-bit mode when is 3D acceleration enabled. So, turn in off for installation and turn in on after SoftGPU is installed. On VMware 17.5 this was fixed, so you can enable HW acceleration before installation.
 
   - (optional) click on *Printer* and click *Remove* (if you don't plan to use this feature, you'll save yourself from a pointless warning message)
   - click on *New CD/DVD (IDE)* and point *Use ISO image file* to your Windows 98 installation CD ISO.
@@ -294,18 +310,22 @@ SoftGPU with HW acceleration was tested only with lasted version of VMware Works
 5) Install the Windows 98 - this step is really pain, VMware VM in BIOS VGA mode is hyper slow and mouse isn't usable - you have navigate through installation by keyboard (`TAB`, `Shift`+`TAB`, cursor keys, `Enter`).
 	- TIP: apply [patcher9x](https://github.com/JHRobotics/patcher9x). If you have Intel 11th gen. CPU or newer or AMD Ryzen (any model) or other AMD ZEN architecture CPU and newer, this is necessary.
 6) After installation isn't system very usable until you'll install GPU driver! So, insert **SoftGPU iso** (can be downloaded in Releases) and run `softgpu.exe`.
-7) Click on *Install!*
-8) You maybe need some reboots (after MSVCRT and DX installation) and run `softgpu.exe` again.
-9) After complete and final reboot system should start in 640x480 in 32 bits per pixel colors.
-10) If you have mouse trouble, open *Device Manager* (by cursor keys select *My Computer* and press `Alt`+`Enter` to open properties), then disable all *HID-compliant mouse*. Reboot VM after done!
+7) Set *Hypervisor preset* to **VMware Workstation (compatible)**. ("Compatible" profile install bit older Mesa but works for both vGPU9 and vGPU10).
+
+![VMware profile](resource/docs/profile-vmw.png)
+
+8) Click on *Install!*
+9) You maybe need some reboots (after MSVCRT and DX installation) and run `softgpu.exe` again.
+10) After complete and final reboot system should start in 640x480 in 32 bits per pixel colors.
+11) If you have mouse trouble, open *Device Manager* (by cursor keys select *My Computer* and press `Alt`+`Enter` to open properties), then disable all *HID-compliant mouse*. Reboot VM after done!
 
 ![VMware HID devices disabled](resource/docs/vmw-hid.png)
 
-11) Turn off VM, open VM setting and under Display check **Accelerate 3D graphics**
+12) Turn off VM, open VM setting and under Display check **Accelerate 3D graphics**
 
 ![](resource/docs/vmw-setup-4.png)
 
-12) Start VM and use `glchecker.exe` to verify settings.
+13) Start VM and use `glchecker.exe` to verify settings.
 
 
 ### VMware Workstation Player

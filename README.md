@@ -283,7 +283,7 @@ SoftGPU with HW acceleration was tested only with lasted version of VMware Works
   - Select *I will install the operating system later.*
   - As *Guest operating system* choice **Microsoft Windows** and as *Version* select **Windows 98** (this is optional, driver itself reporting system version)
 
-![](resource/docs/vmw-setup-2b.png)
+![](resource/docs/vmw-setup-2c.png)
 
   - Type VM name and number of processors keep on *1*
   - Set the memory to 512 MB (but without additional patches not more!)

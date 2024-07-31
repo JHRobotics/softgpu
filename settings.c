@@ -617,6 +617,17 @@ void settingsSetStr(DWORD menu, const char *str, BOOL copy)
 	}
 }
 
+static DWORD getSettingsLevel()
+{
+	DWORD settings_level = atoi(iniValueDef("[[softgpu]]", "settings_level", "0"));
+	if(settings_level == 0)
+	{
+		settings_level = SOFTGPU_BUILD;
+	}
+	
+	return settings_level;
+}
+
 #define MAX_CONF_DW 4
 
 #define KEYNAME_FMT "HKCU\\SOFTWARE\\SoftGPU\\setup-%d\\%s"
@@ -625,6 +636,8 @@ void writeSettings()
 {
 	char keyname[MAX_PATH];
 	DWORD confdw[MAX_CONF_DW];
+	
+	DWORD settings_level = getSettingsLevel();
 	
 	memset(&confdw[0], 0, sizeof(confdw));
 	
@@ -644,11 +657,11 @@ void writeSettings()
 				break;
 			case T_INPUT_NUM:
 			case T_DROPDOWN:
-				sprintf(keyname, KEYNAME_FMT, SOFTGPU_BUILD, item->name);
+				sprintf(keyname, KEYNAME_FMT, settings_level, item->name);
 				registryWriteDWORD(keyname, item->dvalue);
 				break;
 			case T_INPUT_STR:
-				sprintf(keyname, KEYNAME_FMT, SOFTGPU_BUILD, item->name);
+				sprintf(keyname, KEYNAME_FMT, (item->menu == INP_PATH) ? SOFTGPU_BUILD : settings_level, item->name);
 				registryWrite(keyname, item->svalue, WINREG_STR);
 				break;
 		}
@@ -657,7 +670,7 @@ void writeSettings()
 	int j;
 	for(j = 0; j < MAX_CONF_DW; j++)
 	{
-		sprintf(keyname, KEYNAME_FMT "%02d", SOFTGPU_BUILD, "cfg", j);
+		sprintf(keyname, KEYNAME_FMT "%02d", settings_level, "cfg", j);
 		registryWriteDWORD(keyname, confdw[j]);
 	}
 }
@@ -668,10 +681,12 @@ BOOL readSettings()
 	char value[MAX_PATH];
 	DWORD confdw[MAX_CONF_DW];
 	
+	DWORD settings_level = getSettingsLevel();
+	
 	int j;
 	for(j = 0; j < MAX_CONF_DW; j++)
 	{
-		sprintf(keyname, KEYNAME_FMT "%02d", SOFTGPU_BUILD, "cfg", j);
+		sprintf(keyname, KEYNAME_FMT "%02d", settings_level, "cfg", j);
 		if(!registryReadDWORD(keyname, &confdw[j]))
 		{
 			return FALSE;
@@ -691,11 +706,11 @@ BOOL readSettings()
 				break;
 			case T_INPUT_NUM:
 			case T_DROPDOWN:
-				sprintf(keyname, KEYNAME_FMT, SOFTGPU_BUILD, item->name);
+				sprintf(keyname, KEYNAME_FMT, settings_level, item->name);
 				registryReadDWORD(keyname, &item->dvalue);
 				break;
 			case T_INPUT_STR:
-				sprintf(keyname, KEYNAME_FMT, SOFTGPU_BUILD, item->name);
+				sprintf(keyname, KEYNAME_FMT, (item->menu == INP_PATH) ? SOFTGPU_BUILD : settings_level, item->name);
 				if(registryRead(keyname, value, MAX_PATH))
 				{
 					if(item->svalue_freeptr != NULL)

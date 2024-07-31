@@ -13,7 +13,7 @@
 #endif
 
 #ifndef SOFTGPU_BUILD
-#define SOFTGPU_BUILD 0
+#define SOFTGPU_BUILD 37
 #endif
 
 #define SOFTGPU_TAG "ALPHA3"

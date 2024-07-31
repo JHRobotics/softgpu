@@ -1,3 +1,7 @@
+0.6.2024.37
+! native DDHAL now operable (introduced in 0.6.2024.36)
+! reduced wasteful surface align
+
 0.6.2024.36
 ! fixed missing non English chars
 ! VMWare vGPU10 support

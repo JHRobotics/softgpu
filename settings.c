@@ -619,7 +619,7 @@ void settingsSetStr(DWORD menu, const char *str, BOOL copy)
 
 static DWORD getSettingsLevel()
 {
-	DWORD settings_level = atoi(iniValueDef("[[softgpu]]", "settings_level", "0"));
+	DWORD settings_level = atoi(iniValueDef("[softgpu]", "settings_level", "0"));
 	if(settings_level == 0)
 	{
 		settings_level = SOFTGPU_BUILD;

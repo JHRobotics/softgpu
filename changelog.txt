@@ -1,3 +1,8 @@
+0.6.2024.38
+! no hard wired modes on DDHAL (1280x800 didn't work for example)
+! no unknown control to DIP (causes BSOD)
+! Wine: broken by LTO (introduced in 0.6.2024.37)
+
 0.6.2024.37
 ! native DDHAL now operable (introduced in 0.6.2024.36)
 ! reduced wasteful surface align

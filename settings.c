@@ -35,6 +35,7 @@
 
 #define ST_DEF 0
 #define VRAM_DEF 128
+#define SVGA_MEM_MAX 400
 #define DEFAULT_INST_PATH "C:\\drivers\\softgpu"
 
 #define T_CHECKBOX  1
@@ -85,17 +86,16 @@ static const settings_item_t settings_def[] =
 	{LBX_PROFILE,          T_DROPDOWN,  24, "profile",  0, NULL, NULL, 0, 0},
 	{INP_PATH,             T_INPUT_STR, 25, "path",     0, DEFAULT_INST_PATH, NULL, 0, 0},
 	{INP_VRAM_LIMIT,       T_INPUT_NUM, 26, "vram",     VRAM_DEF, NULL, NULL, 0, 0},
-	{INP_SCREENTARGET,     T_INPUT_NUM, 27, "screentarget_mb",    ST_DEF, NULL, NULL, 0, 0},
-	{CHBX_ST_16,           T_CHECKBOX,  28, "screentarget_16bpp", 0, NULL, NULL, 0, 0},
-	{CHBX_ST_MOUSE,        T_CHECKBOX,  29, "screentarget_mouse", 0, NULL, NULL, 0, 0},
-	{CHBX_ST_MOUSE_HIDE,   T_CHECKBOX,  30, "screentarget_mouse_hide", 0, NULL, NULL, 0, 0},
 	{CHBX_DOTCOM,          T_CHECKBOX,  31, "dotcom",   0, NULL, NULL, 0, 0},
 	{CHBX_WS2,             T_CHECKBOX,  32, "ws2",      0, NULL, NULL, 0, 0},
-	{CHBX_BLIT_SURF,       T_CHECKBOX,  33, "blit_surf", 0, NULL, NULL, 0, 0},
-	{CHBX_DMA_NEED_REREAD, T_CHECKBOX,  34, "dma_need_reread", 1, NULL, NULL, 0, 0},
-	{CHBX_MESA_DOWNGRADE,  T_CHECKBOX,  35, "mesa_downgrade",  1, NULL, NULL, 0, 0},
 	{CHBX_NO_MULTISAMPLE,  T_CHECKBOX,  36, "no_multisample",  0, NULL, NULL, 0, 0},
 	{INP_ASYNCMOBS,        T_INPUT_NUM, 37, "asyncmobs", 1, NULL, NULL, 0, 0},
+	{CHBX_GMR_CACHE,       T_CHECKBOX,  38, "gmrcache",  0, NULL, NULL, 0, 0},
+	{IMP_SVGA_MEM_MAX,     T_INPUT_NUM, 39, "svgamemmax", SVGA_MEM_MAX, NULL, NULL, 0, 0},
+	{CHBX_SW_GAMMA,        T_CHECKBOX,  40, "swgamma",   0, NULL, NULL, 0, 0},
+	{CHBX_DMA_TO_FB,       T_CHECKBOX,  41, "dmatofb",   0, NULL, NULL, 0, 0},
+	{CHBX_HWCURSOR,        T_CHECKBOX,  42, "hwcursor",  0, NULL, NULL, 0, 0},
+	{CHBX_MESA_DOWNGRADE,  T_CHECKBOX,  43, "mesa_downgrade",  0, NULL, NULL, 0, 0},
 	{0,                    0,            0, NULL,        0, NULL, NULL, 0, 0}
 };
 

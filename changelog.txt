@@ -1,3 +1,10 @@
+0.6.2024.39
+! stability fixes
+! double buffering support (or emulation)
+! Hires <-> VGA mode switching correctly
+- Gamma support (disabled by default)
+- Increased compatibility list
+
 0.6.2024.38
 ! no hard wired modes on DDHAL (1280x800 didn't work for example)
 ! no unknown control to DIP (causes BSOD)

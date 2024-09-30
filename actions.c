@@ -1130,32 +1130,22 @@ BOOL set_inf_regs(HWND hwnd)
 		registryWriteInf("HKLM\\Software\\D9Switcher\\global", "nine", WINREG_STR, dstfile);
 	else
 		registryWriteInf("HKLM\\Software\\D9Switcher\\global", "wine", WINREG_STR, dstfile);
-	
-	DWORD stoptions = 0;
-	if(isSettingSet(CHBX_ST_16))
-	{
-		stoptions |= 0x1;
-	}
-	
-	if(isSettingSet(CHBX_ST_MOUSE))
-	{
-		stoptions |= 0x2;
-	}
-	
-	if(isSettingSet(CHBX_ST_MOUSE_HIDE))
-	{
-		stoptions |= 0x4;
-	}
-	
-	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\STSize", settingReadDW(INP_SCREENTARGET), dstfile);
-	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\STOptions", stoptions, dstfile);
-	
-	registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\SVGA_BLIT_SURF_TO_SCREEN", settingReadDW(CHBX_BLIT_SURF),       dstfile);
-	registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\SVGA_DMA_NEED_REREAD",     settingReadDW(CHBX_DMA_NEED_REREAD), dstfile);
-	
+
 	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\NoMultisample", settingReadDW(CHBX_NO_MULTISAMPLE), dstfile);
 	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\AsyncMOBs",     settingReadDW(INP_ASYNCMOBS), dstfile);
+
+	registryWriteInfDWORD("HKLM\\Software\\Mesa3d\\SVGA_GMR_CACHE_ENABLED",        settingReadDW(CHBX_GMR_CACHE),   dstfile);
 	
+	if(settingReadDW(IMP_SVGA_MEM_MAX) != 400)
+	{
+		registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\SVGA_MEM_MAX",        settingReadDW(IMP_SVGA_MEM_MAX), dstfile);
+	}
+	
+	registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\MESA_SW_GAMMA_ENABLED", settingReadDW(CHBX_SW_GAMMA),    dstfile);
+	registryWriteInfDWORD("HKLM\\Software\\Mesa3D\\global\\SVGA_DMA_TO_FB",        settingReadDW(CHBX_DMA_TO_FB),   dstfile);
+
+	registryWriteInfDWORD("HKLM\\Software\\VMWSVGA\\HWCursor",                     settingReadDW(CHBX_HWCURSOR),    dstfile);
+
 	return TRUE;
 }
 

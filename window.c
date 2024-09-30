@@ -334,41 +334,41 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	DRAW_DIRECTION_DOWN;
 	
 	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "SVGA settings", 0);
+
+	CHECKBOX(CHBX_DMA_TO_FB,           CUST_WIDTH,   LINE_HEIGHT, "DMA surface to framebuffer (VB)");
+	CHECKBOX(CHBX_HWCURSOR,            CUST_WIDTH,   LINE_HEIGHT, "HW cursor (VMW, in VB bugged)");
+
+	CHECKBOX(CHBX_BUG_DX_FLAGS,        CUST_WIDTH,   LINE_HEIGHT, "DX flags (VB <= 7.0.14)");
+	CHECKBOX(CHBX_BUG_PREFER_FIFO,     CUST_WIDTH,   LINE_HEIGHT, "Prefer FIFO (VME)");
+	CHECKBOX(CHBX_BUG_RGB565,          CUST_WIDTH,   LINE_HEIGHT, "RGB565 (VB < 7.0.10, < 6.1.46)");
+
+	CHECKBOX(CHBX_MESA_DOWNGRADE,      CUST_WIDTH,   LINE_HEIGHT, "Downgrade Mesa3D (VMW vGPU9)");
+
+	CHECKBOX(CHBX_NO_MULTISAMPLE,      CUST_WIDTH,   LINE_HEIGHT, "Disable multisample (VMW)");
+
+	draw_y += LINE_HEIGHT;
 	
-	CHECKBOX(CHBX_BLIT_SURF,           CUST_WIDTH,   LINE_HEIGHT, "Blit surface to screen (VBox)");
-	CHECKBOX(CHBX_DMA_NEED_REREAD,     CUST_WIDTH,   LINE_HEIGHT, "DMA need reread (VBox)");
-	
-	CHECKBOX(CHBX_BUG_DX_FLAGS,        CUST_WIDTH,   LINE_HEIGHT, "DX flags (VBox <= 7.0.14)");
-	CHECKBOX(CHBX_BUG_PREFER_FIFO,     CUST_WIDTH,   LINE_HEIGHT, "Prefer FIFO (VMware)");
-	CHECKBOX(CHBX_BUG_RGB565,          CUST_WIDTH,   LINE_HEIGHT, "RGB565 (VBox < 7.0.10, < 6.1.46)");
-	
-	CHECKBOX(CHBX_MESA_DOWNGRADE,      CUST_WIDTH,   LINE_HEIGHT, "Downgrade Mesa3D (VMware)");
-	
-	CHECKBOX(CHBX_NO_MULTISAMPLE,      CUST_WIDTH,   LINE_HEIGHT, "Disable multisample (VMware)");
-	
+	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "Experimental settings", 0);
+//	draw_y += LINE_HL;
+
 	DRAW_DIRECTION_RIGHT;
 	LABEL(0,             200, LINE_HEIGHT, "Async MOBs: ", 0);
 	INPUT(INP_ASYNCMOBS,  50, LINE_HEIGHT, "", 0);
-	draw_x = DRAW_START_X;
 	draw_y += LINE_HEIGHT;
+	draw_x = DRAW_START_X;
 	DRAW_DIRECTION_DOWN;
-	
-	draw_y += LINE_HL;
-	
-	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "SVGA screen target (experimental)", 0);
-	
+
+	CHECKBOX(CHBX_GMR_CACHE,           CUST_WIDTH,   LINE_HEIGHT, "GMR cache (vGPU9, inefficient)");
+	CHECKBOX(CHBX_SW_GAMMA,            CUST_WIDTH,   LINE_HEIGHT, "Enable gamma globaly (slow)");
+
 	DRAW_DIRECTION_RIGHT;
-	
-	LABEL(0,               200, LINE_HEIGHT, "Screen target surface (MB): ", 0);
-	INPUT(INP_SCREENTARGET, 50, LINE_HEIGHT, "", 0);
-	
+	LABEL(0,             200, LINE_HEIGHT, "SVGA RAM limit (MB): ", 0);
+	INPUT(IMP_SVGA_MEM_MAX,  50, LINE_HEIGHT, "", 0);
 	draw_x = DRAW_START_X;
 	draw_y += LINE_HEIGHT;
 	DRAW_DIRECTION_DOWN;
 	
-	CHECKBOX(CHBX_ST_16,    CUST_WIDTH, LINE_HEIGHT, "Screen target for 16bpp");
-	CHECKBOX(CHBX_ST_MOUSE, CUST_WIDTH, LINE_HEIGHT, "Screen target accelerated mouse");
-	CHECKBOX(CHBX_ST_MOUSE_HIDE, CUST_WIDTH, LINE_HEIGHT, "Screen target mouse hide");
-	
+	//LABEL(0,             200, LINE_HEIGHT, "VB = VirtualBox, VMW = WMware Workstation ", 0);
+
 	settingsApply(hwnd);
 }

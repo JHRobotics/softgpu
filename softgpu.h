@@ -92,20 +92,26 @@
 
 #define BTN_CUSTOM 40
 
-#define INP_SCREENTARGET 41
-#define CHBX_ST_16 42
-#define CHBX_ST_MOUSE 43
-#define CHBX_ST_MOUSE_HIDE 44
+//#define INP_SCREENTARGET 41
+//#define CHBX_ST_16 42
+//#define CHBX_ST_MOUSE 43
+//#define CHBX_ST_MOUSE_HIDE 44
 
 #define CHBX_DOTCOM  45
 #define CHBX_WS2     46
 
-#define CHBX_BLIT_SURF 47
-#define CHBX_DMA_NEED_REREAD 48
+//#define CHBX_BLIT_SURF 47
+//#define CHBX_DMA_NEED_REREAD 48
 
 #define CHBX_MESA_DOWNGRADE 49
 #define CHBX_NO_MULTISAMPLE 50
 #define INP_ASYNCMOBS 51
+
+#define CHBX_GMR_CACHE   52
+#define IMP_SVGA_MEM_MAX 53
+#define CHBX_SW_GAMMA    54
+#define CHBX_DMA_TO_FB   55
+#define CHBX_HWCURSOR    56
 
 BOOL isSettingSet(DWORD menu);
 void writeSettings();

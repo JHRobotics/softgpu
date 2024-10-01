@@ -3,6 +3,7 @@
 ! double buffering support (or emulation)
 ! Hires <-> VGA mode switching correctly
 - Gamma support (disabled by default)
+- Driver: HW cursor in 8/16/32 bpp (VMware)
 - Increased compatibility list
 
 0.6.2024.38

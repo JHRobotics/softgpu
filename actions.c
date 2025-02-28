@@ -323,16 +323,16 @@ void install_infobox(HWND hwnd, const char *name)
 	{
 		sprintf(msg_buffer,
 			"Setup will install now %s\n\n"
-			"Afrer instalation reboot is recomended.\n\n"
+			"After installation reboot is recomended.\n\n"
 			"WARNING: your system have \"CPU speed bug\", update system component sometimes overwrite patched files!"
-			"Make sure you have Patcher9x boot floppy, if the system fail boot afrer update.\n\n"
+			"Make sure you have Patcher9x boot floppy, if the system fail boot after update.\n\n"
 			"After reboot, please run SOFTGPU setup again!", name);
 		MessageBoxA(hwnd, msg_buffer, name, MB_ICONWARNING);
 	}
 	else
 #endif
 	{
-		sprintf(msg_buffer, "Setup will now install %s\n\nAfrer instalation reboot is recomended.\n\nAfter reboot, please run SOFTGPU setup again!", name);
+		sprintf(msg_buffer, "Setup will now install %s\n\nAfter installation reboot is recomended.\n\nAfter reboot, please run SOFTGPU setup again!", name);
 		MessageBoxA(hwnd, msg_buffer, name, MB_ICONINFORMATION);
 	}
 
@@ -353,9 +353,9 @@ BOOL dotcom_start(HWND hwnd)
 BOOL ws2_start(HWND hwnd)
 {
 	int r = MessageBoxA(hwnd, "Setup will now install Winsock 2 update, before continue is required to have TCP/IP enabled. Process to installation or exit to configure interface?\n\n"
-		"Yes = start the instalation\n"
+		"Yes = start the installation\n"
 		"No = exit SoftGPU installer\n\n"
-		"Reboot is required after installation.", "WS2 instalation", MB_YESNO | MB_ICONQUESTION);
+		"Reboot is required after installation.", "WS2 installation", MB_YESNO | MB_ICONQUESTION);
 	
 	if(r == IDYES)
 	{
@@ -439,7 +439,7 @@ BOOL driver_copy(HWND hwnd)
 	}
 	else
 	{
-		sprintf(mgsbuf, "Automatic instalation isn't possible, because it is unsupported on this system. You have to install driver manually!\n\nDriver files are located here: %s", install_path);
+		sprintf(mgsbuf, "Automatic installation isn't possible, because it is unsupported on this system. You have to install driver manually!\n\nDriver files are located here: %s", install_path);
 		MessageBoxA(hwnd, mgsbuf, "No automatic driver install", MB_ICONWARNING);
 	}
 	

@@ -40,7 +40,7 @@ const char msg_nt[] =
 	"Your system is NT! "
 	"This driver is only for Windows 9x = 95, 98 and Me! "
 	"Setup can preset the driver on this system but you've to copy "
-	"these files and install on 9x system manualy.";
+	"these files and install on 9x system manually.";
 
 const char msg_95[] = 
 	"In Windows 95 isn't available automatic installation. "
@@ -55,7 +55,7 @@ const char msg_unknown[] =
 	"install the driver manualy if you sure, that match to your device.";
 
 const char msg_nogpu[] = 
-	"No video detected, please make sure, that at last Microsoft generic driver (640x480, 4bpp) is instaled!";
+	"No video detected, please make sure, that at last Microsoft generic driver (640x480, 4bpp) is installed!";
 
 const char msg_win95[] = 
 	"Automatic installation isn't possible on Windows 95. Installer preset driver, but you have to install it manualy via Device Manager. "

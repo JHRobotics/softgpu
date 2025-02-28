@@ -323,8 +323,8 @@ void install_infobox(HWND hwnd, const char *name)
 	{
 		sprintf(msg_buffer,
 			"Setup will install now %s\n\n"
-			"After installation reboot is recomended.\n\n"
-			"WARNING: your system have \"CPU speed bug\", update system component sometimes overwrite patched files!"
+			"After installation reboot is recommended.\n\n"
+			"WARNING: Your system has \"CPU speed bug\", update system component sometimes overwrite patched files!"
 			"Make sure you have Patcher9x boot floppy, if the system fail boot after update.\n\n"
 			"After reboot, please run SOFTGPU setup again!", name);
 		MessageBoxA(hwnd, msg_buffer, name, MB_ICONWARNING);
@@ -332,7 +332,7 @@ void install_infobox(HWND hwnd, const char *name)
 	else
 #endif
 	{
-		sprintf(msg_buffer, "Setup will now install %s\n\nAfter installation reboot is recomended.\n\nAfter reboot, please run SOFTGPU setup again!", name);
+		sprintf(msg_buffer, "Setup will now install %s\n\nAfter installation reboot is recommended.\n\nAfter reboot, please run SOFTGPU setup again!", name);
 		MessageBoxA(hwnd, msg_buffer, name, MB_ICONINFORMATION);
 	}
 

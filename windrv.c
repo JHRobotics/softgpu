@@ -610,7 +610,7 @@ BOOL installVideoDriver(const char *szDriverDir, const char *infName)
   
   if(driverSection == NULL)
   {
-  	REPORT("No supported VGA adapter found! (It could happen if PCI bus isn't detected or is missdetect, for example Win9X in QEMU do this, more informations in README)");
+  	REPORT("No supported VGA adapter found! (It could happen if PCI bus isn't detected or is misdetected, for example Win9X in QEMU do this, more informations in README)");
   	return FALSE;
   }
   

@@ -13,7 +13,7 @@ else
   CFLAGS=-std=c99 -Wall -Wextra -Os -march=pentium2 -fdata-sections -ffunction-sections
 endif
 
-SOFTGPU_PATCH=2024
+SOFTGPU_PATCH=2025
 
 ifdef EXTRA_INFO
 CFLAGS += -DEXTRA_INFO="$(EXTRA_INFO)"

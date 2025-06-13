@@ -6,17 +6,17 @@
 #define SOFTGPU_STR(x) SOFTGPU_STR_(x)
 
 #define SOFTGPU_MAJOR 0
-#define SOFTGPU_MINOR 6
+#define SOFTGPU_MINOR 8
 
 #ifndef SOFTGPU_PATCH
-#define SOFTGPU_PATCH 2024
+#define SOFTGPU_PATCH 2025
 #endif
 
 #ifndef SOFTGPU_BUILD
-#define SOFTGPU_BUILD 37
+#define SOFTGPU_BUILD 50
 #endif
 
-#define SOFTGPU_TAG "ALPHA3"
+#define SOFTGPU_TAG "BETA1"
 
 #define SOFTGPU_VERSION_STR_BUILD(_ma, _mi, _pa, _bl, _tag) \
 	_ma "." _mi "." _pa "." _bl "-" _tag

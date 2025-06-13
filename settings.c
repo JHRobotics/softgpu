@@ -74,11 +74,13 @@ static const settings_item_t settings_def[] =
 	{CHBX_1440,            T_CHECKBOX,  12, "res_1440", 0, NULL, NULL, 0, 0},
 	{CHBX_4K,              T_CHECKBOX,  13, "res_2160", 0, NULL, NULL, 0, 0},
 	{CHBX_5K,              T_CHECKBOX,  14, "res_2880", 0, NULL, NULL, 0, 0},
-	{RAD_DD_HAL,           T_RADIO,     15, "dd_hal",   0, NULL, NULL, 2, 0},
-	{RAD_DD_WINE,          T_RADIO,     16, "dd_wine",  1, NULL, NULL, 2, 0},
-	{RAD_D8_WINE,          T_RADIO,     17, "d8_wine",  1, NULL, NULL, 3, 0},
+	{RAD_DD_HAL,           T_RADIO,     15, "dd_hal",   1, NULL, NULL, 2, 0},
+	{RAD_DD_WINE,          T_RADIO,     16, "dd_wine",  0, NULL, NULL, 2, 0},
+	{RAD_D8_HAL,           T_RADIO,     45, "d8_hal",   1, NULL, NULL, 3, 0},
+	{RAD_D8_WINE,          T_RADIO,     17, "d8_wine",  0, NULL, NULL, 3, 0},
 	{RAD_D8_NINE,          T_RADIO,     18, "d8_nine",  0, NULL, NULL, 3, 0},
-	{RAD_D9_WINE,          T_RADIO,     19, "d9_wine",  1, NULL, NULL, 4, 0},
+	{RAD_D9_HAL,           T_RADIO,     46, "d9_hal",   1, NULL, NULL, 4, 0},
+	{RAD_D9_WINE,          T_RADIO,     19, "d9_wine",  0, NULL, NULL, 4, 0},
 	{RAD_D9_NINE,          T_RADIO,     20, "d9_nine",  0, NULL, NULL, 4, 0},
 	{CHBX_BUG_PREFER_FIFO, T_CHECKBOX,  21, "fifo",     1, NULL, NULL, 0, 0},
 	{CHBX_BUG_RGB565,      T_CHECKBOX,  22, "rgb565",   1, NULL, NULL, 0, 0},
@@ -95,7 +97,7 @@ static const settings_item_t settings_def[] =
 	{CHBX_SW_GAMMA,        T_CHECKBOX,  40, "swgamma",   0, NULL, NULL, 0, 0},
 	{CHBX_DMA_TO_FB,       T_CHECKBOX,  41, "dmatofb",   0, NULL, NULL, 0, 0},
 	{CHBX_HWCURSOR,        T_CHECKBOX,  42, "hwcursor",  0, NULL, NULL, 0, 0},
-	{CHBX_MESA_DOWNGRADE,  T_CHECKBOX,  43, "mesa_downgrade",  0, NULL, NULL, 0, 0},
+	{CHBX_MESA_ALT,        T_CHECKBOX,  44, "mesa_alt",  0, NULL, NULL, 0, 0},
 	{0,                    0,            0, NULL,        0, NULL, NULL, 0, 0}
 };
 

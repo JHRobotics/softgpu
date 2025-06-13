@@ -103,7 +103,7 @@
 //#define CHBX_BLIT_SURF 47
 //#define CHBX_DMA_NEED_REREAD 48
 
-#define CHBX_MESA_DOWNGRADE 49
+//#define CHBX_MESA_DOWNGRADE 49
 #define CHBX_NO_MULTISAMPLE 50
 #define INP_ASYNCMOBS 51
 
@@ -112,6 +112,11 @@
 #define CHBX_SW_GAMMA    54
 #define CHBX_DMA_TO_FB   55
 #define CHBX_HWCURSOR    56
+
+#define RAD_D8_HAL 57
+#define RAD_D9_HAL 58
+
+#define CHBX_MESA_ALT 59
 
 BOOL isSettingSet(DWORD menu);
 void writeSettings();

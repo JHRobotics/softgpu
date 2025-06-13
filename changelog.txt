@@ -1,3 +1,7 @@
+0.8.2025.xx
+! DirectX native driver
+- Wine fully optional
+
 0.6.2024.39
 ! stability fixes
 ! double buffering support (or emulation)

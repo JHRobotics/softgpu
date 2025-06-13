@@ -160,21 +160,17 @@ BOOL checkDXReinstall()
 	strcat(syspath, "\\ddraw.dll");
 	if(is_wrapper(syspath, FALSE))
 	{
-		strcpy(syspath+syspath_len, "\\ddsys.dll");
-		if(is_wrapper(syspath, TRUE))
-		{
-			return TRUE;
-		}
+		//strcpy(syspath+syspath_len, "\\ddsys.dll");
+		//if(is_wrapper(syspath, TRUE))
+		return TRUE;
 	}
 	
 	strcpy(syspath+syspath_len, "\\d3d8.dll");
 	if(is_wrapper(syspath, FALSE))
 	{
-		strcpy(syspath+syspath_len, "\\msd3d8.dll");
-		if(is_wrapper(syspath, TRUE))
-		{
-			return TRUE;
-		}
+		//strcpy(syspath+syspath_len, "\\msd3d8.dll");
+		//if(is_wrapper(syspath, TRUE))
+		return TRUE;
 	}
 	
 	if(version_compare(&sysver, &WINVER98) >= 0)
@@ -182,11 +178,9 @@ BOOL checkDXReinstall()
 		strcpy(syspath+syspath_len, "\\d3d9.dll");
 		if(is_wrapper(syspath, FALSE))
 		{
-			strcpy(syspath+syspath_len, "\\msd3d9.dll");
-			if(is_wrapper(syspath, TRUE))
-			{
-				return TRUE;
-			}
+			//strcpy(syspath+syspath_len, "\\msd3d9.dll");
+			//if(is_wrapper(syspath, TRUE))
+			return TRUE;
 		}
 	}
 	

@@ -2,3 +2,9 @@
 	path = nocrt
 	url = https://github.com/JHRobotics/nocrt
 	branch = main
+[submodule "regex"]
+	path = tiny-regex-c
+	url = https://github.com/kokke/tiny-regex-c.git
+[submodule "regex2"]
+	path = regex
+	url = https://github.com/kokke/tiny-regex-c.git

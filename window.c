@@ -156,8 +156,8 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	
 	VSPACE;
 	
-	CHECKBOX(CHBX_WINE,         LINE_WIDTH, LINE_HEIGHT, "Install DirectX wrapper");
-	CHECKBOX(CHBX_GLIDE,        LINE_WIDTH, LINE_HEIGHT, "Install Glide wrapper");
+	CHECKBOX(CHBX_WINE,         LINE_WIDTH, LINE_HEIGHT, "Install Wine");
+	CHECKBOX(CHBX_GLIDE,        LINE_WIDTH, LINE_HEIGHT, "Install OpenGlide");
 	CHECKBOX(CHBX_SIMD95,       LINE_WIDTH, LINE_HEIGHT, "Enable SSE/AVX hack");
 	
 	saved_y = draw_y;
@@ -165,20 +165,41 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	draw_x = DRAW_START_X+LINE_WIDTH;
 	draw_y = DRAW_START_Y;
 	
-	RADIO(RAD_DD_HAL,          LINE_WIDTH+50, LINE_HEIGHT, "Native HAL for DX <= 7 (2D only, no 3D!)", WS_GROUP);
-	RADIO(RAD_DD_WINE,         LINE_WIDTH, LINE_HEIGHT, "Wine for DX <= 7",    0);
+	LABEL(0,                   LINE_WIDTH, LINE_HEIGHT, "DirectDraw/DirectX 7 preference", 0);
+	DRAW_DIRECTION_RIGHT;
+	
+	RADIO(RAD_DD_HAL,          60, LINE_HEIGHT, "HAL", WS_GROUP);
+	RADIO(RAD_DD_WINE,         60, LINE_HEIGHT, "Wine",    0);
+	
+	draw_x = DRAW_START_X+LINE_WIDTH;
+	draw_y += LINE_HEIGHT;
+	DRAW_DIRECTION_DOWN;
 	
 	VSPACE;
+	LABEL(0,                   LINE_WIDTH, LINE_HEIGHT, "DirectX 8 preference", 0);
+	DRAW_DIRECTION_RIGHT;
 	
-	RADIO(RAD_D8_WINE,         LINE_WIDTH-30, LINE_HEIGHT, "Wine for DX 8",    WS_GROUP);
-	RADIO(RAD_D8_NINE,         LINE_WIDTH-20, LINE_HEIGHT, "Nine for DX 8 (experimental)",    0);
+	RADIO(RAD_D8_HAL,          60, LINE_HEIGHT, "HAL",    WS_GROUP);
+	RADIO(RAD_D8_WINE,         60, LINE_HEIGHT, "Wine",    0);
+	RADIO(RAD_D8_NINE,         60, LINE_HEIGHT, "Nine",    0);
+	
+	draw_x = DRAW_START_X+LINE_WIDTH;
+	draw_y += LINE_HEIGHT;
+	DRAW_DIRECTION_DOWN;
 	
 	VSPACE;
+	LABEL(0,                   LINE_WIDTH, LINE_HEIGHT, "DirectX 9 preference", 0);
+	DRAW_DIRECTION_RIGHT;
 	
-	RADIO(RAD_D9_WINE,         LINE_WIDTH-30, LINE_HEIGHT, "Wine for DX 9",    WS_GROUP);
-	RADIO(RAD_D9_NINE,         LINE_WIDTH-20, LINE_HEIGHT, "Nine for DX 9 (experimental)",    0);
-	
+	RADIO(RAD_D9_HAL,          60, LINE_HEIGHT, "HAL",    WS_GROUP);
+	RADIO(RAD_D9_WINE,         60, LINE_HEIGHT, "Wine",    0);
+	RADIO(RAD_D9_NINE,         60, LINE_HEIGHT, "Nine",    0);
+
+	draw_x = DRAW_START_X+LINE_WIDTH;
+	draw_y += LINE_HEIGHT;
+	DRAW_DIRECTION_DOWN;
 	VSPACE;
+	
 	
 	CHECKBOX(CHBX_3DFX,         LINE_WIDTH, LINE_HEIGHT, "Copy 3DFX files (vgl, splash)");
 	CHECKBOX(CHBX_FIXES,        LINE_WIDTH, LINE_HEIGHT, "Apply compatibility fixes");
@@ -336,15 +357,15 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "SVGA settings", 0);
 
 	CHECKBOX(CHBX_DMA_TO_FB,           CUST_WIDTH,   LINE_HEIGHT, "DMA surface to framebuffer (VB)");
-	CHECKBOX(CHBX_HWCURSOR,            CUST_WIDTH,   LINE_HEIGHT, "HW cursor (VMW, in VB bugged)");
+	CHECKBOX(CHBX_HWCURSOR,            CUST_WIDTH,   LINE_HEIGHT, "HW cursor (in some VB bugged)");
 
 	CHECKBOX(CHBX_BUG_DX_FLAGS,        CUST_WIDTH,   LINE_HEIGHT, "DX flags (VB <= 7.0.14)");
-	CHECKBOX(CHBX_BUG_PREFER_FIFO,     CUST_WIDTH,   LINE_HEIGHT, "Prefer FIFO (VME)");
+	CHECKBOX(CHBX_BUG_PREFER_FIFO,     CUST_WIDTH,   LINE_HEIGHT, "Prefer FIFO");
 	CHECKBOX(CHBX_BUG_RGB565,          CUST_WIDTH,   LINE_HEIGHT, "RGB565 (VB < 7.0.10, < 6.1.46)");
 
-	CHECKBOX(CHBX_MESA_DOWNGRADE,      CUST_WIDTH,   LINE_HEIGHT, "Downgrade Mesa3D (VMW vGPU9)");
+	CHECKBOX(CHBX_MESA_ALT,            CUST_WIDTH,   LINE_HEIGHT, "Mesa3D 25.0.x");
 
-	CHECKBOX(CHBX_NO_MULTISAMPLE,      CUST_WIDTH,   LINE_HEIGHT, "Disable multisample (VMW)");
+	CHECKBOX(CHBX_NO_MULTISAMPLE,      CUST_WIDTH,   LINE_HEIGHT, "Disable multisample (VMWare)");
 
 	draw_y += LINE_HEIGHT;
 	

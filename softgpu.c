@@ -911,7 +911,12 @@ int main(int argc, const char *argv[])
 	
 	ShowWindow(win_cust, SW_HIDE);
 	
-	SetForegroundWindow(win_main);	
+	SetForegroundWindow(win_main);
+	
+	if(iniValue("[softgpu]", "warn") != NULL)
+	{
+		MessageBoxA(win_main, iniValue("[softgpu]", "warn"), "Warning", MB_ICONWARNING);
+	}
 	
 	timer_proc(win_main);
 	

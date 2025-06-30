@@ -35,7 +35,7 @@ BOOL is_wrapper(const char *dll, BOOL need_exists)
 				VerQueryValueA(res, "\\VarFileInfo\\Translation", (LPVOID *)&lpTranslate, &cbTranslate);
 					
 				for(i = 0; i < (cbTranslate/sizeof(struct LANGANDCODEPAGE)); i++)
-				{					
+				{
 					void *desc;
 					UINT descLen;
 					

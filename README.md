@@ -100,14 +100,14 @@ General instruction for most machines:
 1) Copy installation files on formatted HDD and apply **patcher9x** [Optional but recommended]
 2) Install the Windows 95/98/Me [Windows 98 SE is recommended]
 3) [optional] install **PATCHMEM by rloew** and increase VM memory (1024 MB is usually enough)
-4) [optional] install audio drivers ([the most common drivers are below](#extra-drivers))[^1]
+4) [optional] install audio drivers ([the most common drivers are below](#extra-drivers))[^3]
 5) Run setup with `softgpu.exe`
 6) Select *Hypervisor preset* to match your VM software
 7) Press *Install!*
 8) [optional] Install additional drivers, for example USB (if you added USB controller)
 9) Have fun!
 
-[^1]: Do this before install/update DirectX redistributable, because audio drivers usually overwrite DX files with outdated versions.
+[^3]: Do this before install/update DirectX redistributable, because audio drivers usually overwrite DX files with outdated versions.
 
 ### Windows 95 installation
 

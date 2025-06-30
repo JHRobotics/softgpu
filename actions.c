@@ -809,15 +809,9 @@ BOOL setLineQemu(char *buf, size_t bufs)
 BOOL setLineSvgaReg(char *buf, size_t bufs)
 {
 	(void)bufs;
-	
-	strcpy(buf, "AddReg=VMSvga.AddReg,VM.AddReg");
-	
-	if(isSettingSet(CHBX_WINE) && version_compare(&sysver, &WINVERME) >= 0)
-	{
-		/* these entries is only relevant to system, that cannot replace ddraw.dll */
-		strcat(buf, ",DX.addReg");
-	}
-	
+
+	strcpy(buf, "AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg");
+
 	if(isSettingSet(CHBX_QXGA))
 		strcat(buf, ",VM.QXGA");
 	
@@ -838,17 +832,12 @@ BOOL setLineSvgaReg(char *buf, size_t bufs)
 BOOL setLineVboxReg(char *buf, size_t bufs)
 {
 	(void)bufs;
-	
-	strcpy(buf, "AddReg=VBox.AddReg,VM.AddReg");
-	
-	if(isSettingSet(CHBX_WINE) && version_compare(&sysver, &WINVERME) >= 0)
-	{
-		strcat(buf, ",DX.addReg");
-	}
-	
+
+	strcpy(buf, "AddReg=VBox.AddReg,VM.AddReg,DX.addReg");
+
 	if(isSettingSet(CHBX_QXGA))
 		strcat(buf, ",VM.QXGA");
-	
+
 	if(isSettingSet(CHBX_1440))
 		strcat(buf, ",VM.WQHD");
 	
@@ -857,8 +846,7 @@ BOOL setLineVboxReg(char *buf, size_t bufs)
 	
 	if(isSettingSet(CHBX_5K))
 		strcat(buf, ",VM.R5K");
-		
-		
+
 	strcat(buf, ",VM.regextra");
 	
 	return TRUE;
@@ -867,14 +855,9 @@ BOOL setLineVboxReg(char *buf, size_t bufs)
 BOOL setLineQemuReg(char *buf, size_t bufs)
 {
 	(void)bufs;
-	
-	strcpy(buf, "AddReg=Qemu.AddReg,VM.AddReg");
-	
-	if(isSettingSet(CHBX_WINE) && version_compare(&sysver, &WINVERME) >= 0)
-	{
-		strcat(buf, ",DX.addReg");
-	}
-	
+
+	strcpy(buf, "AddReg=Qemu.AddReg,VM.AddReg,DX.addReg");
+
 	if(isSettingSet(CHBX_QXGA))
 		strcat(buf, ",VM.QXGA");
 	
@@ -1149,36 +1132,38 @@ BOOL set_inf_regs(HWND hwnd)
 	strcat(dstfile, iniValue("[softgpu]", "drvfile"));
 	
 	if(isSettingSet(RAD_DD_WINE))
-		registryWriteInf("HKLM\\Software\\vmdisp9x\\global\\global\\ddraw", "wine",   WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\ddraw", "wine",   WINREG_STR, dstfile);
 	else
-		registryWriteInf("HKLM\\Software\\vmdisp9x\\global\\global\\ddraw", "system", WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\ddraw", "system", WINREG_STR, dstfile);
 	
 	if(isSettingSet(RAD_D8_NINE))
-		registryWriteInf("HKLM\\Software\\vmdisp9x\\global\\global\\d3d8", "nine",   WINREG_STR, dstfile);
-	else if(isSettingSet(RAD_D8_NINE))
-		registryWriteInf("HKLM\\Software\\vmdisp9x\\global\\global\\d3d8", "wine",   WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\d3d8", "nine",   WINREG_STR, dstfile);
+	else if(isSettingSet(RAD_D8_WINE))
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\d3d8", "wine",   WINREG_STR, dstfile);
 	else
-		registryWriteInf("HKLM\\Software\\vmdisp9x\\global\\global\\d3d8", "system", WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\d3d8", "system", WINREG_STR, dstfile);
 		
 	if(isSettingSet(RAD_D9_NINE))
-		registryWriteInf("HKLM\\Software\\vmdisp9x\\global\\global\\d3d9", "nine",   WINREG_STR, dstfile);
-	else if(isSettingSet(RAD_D8_NINE))
-		registryWriteInf("HKLM\\Software\\vmdisp9x\\global\\global\\d3d9", "wine",   WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\d3d9", "nine",   WINREG_STR, dstfile);
+	else if(isSettingSet(RAD_D8_WINE))
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\d3d9", "wine",   WINREG_STR, dstfile);
 	else
-		registryWriteInf("HKLM\\Software\\vmdisp9x\\global\\global\\d3d9", "system", WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\d3d9", "system", WINREG_STR, dstfile);
 
 	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\svga\\NoMultisample", settingReadDW(CHBX_NO_MULTISAMPLE), dstfile);
 	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\svga\\AsyncMOBs",     settingReadDW(INP_ASYNCMOBS), dstfile);
 
-	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\global\\mesa\\SVGA_GMR_CACHE_ENABLED",        settingReadDW(CHBX_GMR_CACHE),   dstfile);
-	
+	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\SVGA_GMR_CACHE_ENABLED",        settingReadDW(CHBX_GMR_CACHE),   dstfile);
+
+#if 0	
 	if(settingReadDW(IMP_SVGA_MEM_MAX) != 400)
 	{
-		registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\global\\mesa\\SVGA_MEM_MAX",        settingReadDW(IMP_SVGA_MEM_MAX), dstfile);
+		registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\SVGA_MEM_MAX",        settingReadDW(IMP_SVGA_MEM_MAX), dstfile);
 	}
+#endif
 
-	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\global\\mesa\\MESA_SW_GAMMA_ENABLED", settingReadDW(CHBX_SW_GAMMA),    dstfile);
-	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\global\\mesa\\SVGA_DMA_TO_FB",        settingReadDW(CHBX_DMA_TO_FB),   dstfile);
+	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\MESA_SW_GAMMA_ENABLED", settingReadDW(CHBX_SW_GAMMA),    dstfile);
+	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\SVGA_DMA_TO_FB",        settingReadDW(CHBX_DMA_TO_FB),   dstfile);
 
 	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\svga\\HWCursor",                     settingReadDW(CHBX_HWCURSOR),    dstfile);
 

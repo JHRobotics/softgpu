@@ -16,7 +16,7 @@
 #define SOFTGPU_BUILD 50
 #endif
 
-#define SOFTGPU_TAG "BETA1"
+#define SOFTGPU_TAG "preview"
 
 #define SOFTGPU_VERSION_STR_BUILD(_ma, _mi, _pa, _bl, _tag) \
 	_ma "." _mi "." _pa "." _bl "-" _tag

@@ -382,13 +382,15 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	CHECKBOX(CHBX_GMR_CACHE,           CUST_WIDTH,   LINE_HEIGHT, "GMR cache (vGPU9, inefficient)");
 	CHECKBOX(CHBX_SW_GAMMA,            CUST_WIDTH,   LINE_HEIGHT, "Enable gamma globaly (slow)");
 
+#if 0
 	DRAW_DIRECTION_RIGHT;
 	LABEL(0,             200, LINE_HEIGHT, "SVGA RAM limit (MB): ", 0);
 	INPUT(IMP_SVGA_MEM_MAX,  50, LINE_HEIGHT, "", 0);
 	draw_x = DRAW_START_X;
 	draw_y += LINE_HEIGHT;
 	DRAW_DIRECTION_DOWN;
-	
+#endif
+
 	//LABEL(0,             200, LINE_HEIGHT, "VB = VirtualBox, VMW = WMware Workstation ", 0);
 
 	settingsApply(hwnd);

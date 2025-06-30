@@ -30,7 +30,7 @@ SoftGPU is pack of driver, wrappers, and system components to make 3D accelerati
 - CPU acceleration
 - Pentium II instruction set (when CPU is emulated)
 - 1 GB free HDD space
-- 512 MB RAM
+- 512 MB RAM (1 GB is recommended for vGPU10, but system need patch)
 - Microsoft Windows 95, 98, 98 SE or Me (Windows 98 SE is recommended)
 - [patcher9x](https://github.com/JHRobotics/patcher9x/releases)
 - [R. Loew's patchmem](http://files.emulace.cz/patchmem.zip) (if you want to set more RAM than 512 MB)
@@ -129,7 +129,7 @@ SoftGPU support 2 differed CPU architectures:
 
 ### Wrappers
 
-Currently GPU driver natively support only **DirectDraw** and **OpenGL** and other API needs to translated to them.
+Currently GPU driver natively support **DirectDraw**, **DirectX** (DDI 8 - allow run programs up to DirectX 9 API level) and **OpenGL**. When native interface isn't 100 % complete you translation graphical API to other, that is supported.
 
 #### Wine D3D (Wine9x)
 
@@ -170,28 +170,7 @@ For Quake 3 and RTCW is OpenGlide disabled, because it causes more problems than
 
 ### VRAM and GMR
 
-Every Windows 9x application has this memory (RING-3) layout:
-- 0x00000000 - 0x7FFFFFFF: private memory (2 GB)
-- 0x80000000 - 0xBFFFFFFF: shared memory (1 GB)
-- 0xC0000000 - 0xFFFFFFFF: system memory (1 GB)
-
-First 2 GB is private to every application but shared and system are the same for every application (RING-3) or driver (PM16 RING-3 or PM32 RING-0). And here is problem: devices memory is mapped to system. As memory we're speaking about ROM (including BIOS), RAM on devices (VRAM, disk controller cache etc., without system RAM) and I/O space (device HW registers, etc.). If we weren't counting VRAM, on most PCs are only about 300-400 MB free in system memory. This is one of problem, why GPU with 512 MB VRAM, not working on Windows 9x, VRAM just not fit here.
-
-In real VRAM are stored framebuffer, surfaces, textures, and buffers (on modern GPU also graphical primitives, shaders and GPU computation data and code). But on Virtual GPU is stored only framebuffer, VMHAL can use VRAM to store surfaces, but for 1920x1200 is only about 16 MB used, 32 MB for theoretical application using DirectDraw with double buffering. Limiting VRAM can be useful to save system memory space.
-
-But where the textures and rendering buffers stored? In something called Guest Memory Region, this is guest system RAM mapped to virtual GPU. vGPU9 stores in GMR working buffer + system memory mapped textures and GPU only mapped textures are in the host memory (in theory they can be in host VRAM only, but usually they are occupying both host RAM and VRAM). vGPU10 also stores GPU mapped textures in guest system RAM (and this RAM is mapped to real GPU, more or less effectively). So minimal application eats 64 MB memory (~32 MB runtime + 32 MB frame buffer), typical game eats about 128 MB for vGPU9 and 256 for vGPU10. Compressed textures are eating more space, then uncompressed, because you need store both compressed and unpacked variant. 16-bit frame buffer is larger than 32-bit, because all rendering operations are 32-bit and final version it's software blit to 16-bit.
-
-Some later games and 3DMark can eat near 700 MB of RAM. SoftGPU in version *v0.5.2024.29-alpha2* have hard limit of maximum GMR, newer version can limit GMR allocation dynamically based on physical memory usage. Also GMR was moved to shared memory to have more logical space to use. Maximum GMR usage in now limited to 400 MB, but if you need more can increase the limit by this setting (700 MB in this example):
-
-```
-REGEDIT4
-
-
-[HKEY_LOCAL_MACHINE\Software\Mesa3D\global]
-"SVGA_MEM_MAX"="700"
-```
-
-Physical maximum is 1024 MB, around 800-900 should work. But be careful, more space is not equal to speed or stability. Note than in VMware software GMR can be less fragmented than in VirtualBox, note also that Windows 9x allocating continual physical space very ineffectively.
+- FIXME
 
 
 ## Registry configuration
@@ -204,7 +183,7 @@ Where are example how registry configuration work, you can save there example as
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\VMWSVGA]
+[HKEY_LOCAL_MACHINE\vmdisp9x\svga]
 ;
 ; For 565 format were reported bad attributes
 ; You can disable it if you have:
@@ -250,7 +229,7 @@ REGEDIT4
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\vmdisp9x]
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\driver]
 ;
 ; set 1 to use software OpenGL event there is some accelerated
 "FORCE_SOFTWARE"=dword:00000000
@@ -267,7 +246,7 @@ REGEDIT4
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\VMWSVGA]
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\svga]
 ;
 ; Limit mapping of VRAM in MB. For Windows 9x is limit
 ; around 300 MB and if you attach more, system will crash.
@@ -309,8 +288,8 @@ Some application won't work or not working well with Wine, for 2D application yo
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\DDSwitcher]
-"MPLAYER2.exe"="system"
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\exe\MPLAYER2.exe]
+"ddraw"="system"
 
 ```
 
@@ -320,8 +299,8 @@ Some 2D games have these problems to, for example The Sims:
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\DDSwitcher]
-"sims.exe"="system"
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\exe\sims.exe]
+"ddraw"="system"
 
 ```
 
@@ -331,9 +310,11 @@ You can also select native DirectDraw HAL by default, and turn on wine for indiv
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\DDSwitcher]
-"global"="system"
-"rayman2.exe"="wine"
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\global]
+"ddraw"="system"
+
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\exe\rayman2.exe]
+"ddraw"="wine"
 
 ```
 
@@ -343,8 +324,8 @@ For DX8 and DX9 you can switch between HEL (there isn't native DirectX HAL) - bu
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\D8Switcher]
-"game.exe"="ninemore"
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\exe\game.exe]
+"d3d8"="nine"
 
 ```
 
@@ -354,8 +335,8 @@ Nine for DX9 game (CMR 3):
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\D9Switcher]
-"Rally_3PC.exe"="nine"
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\exe\Rally_3PC.exe]
+"d3d9"="nine"
 
 ```
 
@@ -368,7 +349,7 @@ Old OpenGL games have problem with too large extension string Quake II is on of 
 ```
 REGEDIT4
 
-[HKEY_LOCAL_MACHINE\Software\Mesa3D\quake2.exe]
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\exe\quake2.exe\mesa]
 "MESA_EXTENSION_MAX_YEAR"="2000"
 ```
 
@@ -377,7 +358,7 @@ When you using software rendering and [SIMD95](https://github.com/JHRobotics/sim
 ```
 REGEDIT4
 
-[HKEY_LOCAL_MACHINE\Software\Mesa3D\quake2.exe]
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\exe\quake2.exe\mesa]
 "LP_NATIVE_VECTOR_WIDTH"="256"
 ```
 
@@ -393,7 +374,7 @@ But also working same registry path scheme as for Mesa, for example increase VRA
 ```
 REGEDIT4
 
-[HKEY_LOCAL_MACHINE\Software\Wine\global]
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\global\wine]
 "VideoMemorySize"="256"
 ```
 
@@ -404,7 +385,7 @@ REGEDIT4
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\vmdisp9x]
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\driver]
 ; override signature in QEMU-3dfx driver
 ; you can obtain current signature by command:
 ; git rev-parse HEAD
@@ -426,7 +407,7 @@ REGEDIT4
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\OpenGlide\Rayman2.exe]
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\exe\Rayman2.exe\openglide]
 ;
 ; disable OpenGlide for some application
 ; very useful if you wish ship glide usage
@@ -480,7 +461,7 @@ You can also tune the configuration of Voodoo board
 REGEDIT4
 
 
-[HKEY_LOCAL_MACHINE\Software\OpenGlide\global]
+[HKEY_LOCAL_MACHINE\Software\vmdisp9x\apps\global\openglide]
 ;
 ; Number of texture mapping units, default is 1
 ; because on original HW both TMUs can be configure

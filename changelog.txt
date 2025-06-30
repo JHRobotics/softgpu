@@ -1,6 +1,11 @@
 0.8.2025.xx
 ! DirectX native driver
+! no DLL replacement
+- HAL: DDI 8
 - Wine fully optional
+- SVGA: stable memory allocation
+- MESA: revert to Mesa 23.1.9 as most stable
+- Wine: original DLL are now hot patched (allow to use without DLL replace)
 
 0.6.2024.39
 ! stability fixes

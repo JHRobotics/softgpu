@@ -1,4 +1,11 @@
-0.8.2025.xx
+0.8.2025.51
+- VMware: VRAM test (VMware bug)
+- QEMU: vmware adapter compatibility fixes
+- SVGA: keep line align when autoresize/in custom modes
+- HAL: don't call memory helpers from ddraw.dll
+- HAL: better surface tracking
+
+0.8.2025.50
 ! DirectX native driver
 ! no DLL replacement
 - HAL: DDI 8

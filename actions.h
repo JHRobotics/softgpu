@@ -57,6 +57,7 @@ BOOL proc_wait(HWND hwnd);
 BOOL mscv_start(HWND hwnd);
 BOOL dx_start(HWND hwnd);
 BOOL ie_start(HWND hwnd);
+BOOL kill_tray(HWND hwnd);
 BOOL setup_end(HWND hwnd);
 BOOL driver_install(HWND hwnd);
 void setInstallPath(HWND input);
@@ -80,5 +81,6 @@ BOOL set_inf_regs(HWND hwnd);
 
 void setDXpath(const char *dx);
 void setIEpath(const char *ie);
+void setTrayPath(const char *path_to_tray);
 
 #endif /* __ACTION_H__INCLUDED__ */

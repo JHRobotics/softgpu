@@ -300,7 +300,8 @@ BOOL liner(const char *src, const char *dst, linerRule_t *rules)
 		DWORD readed;
 		size_t linepos = 0;
 		DWORD junk;
-		
+		size_t fpos = 0;
+
 		HANDLE out = CreateFileA(dst, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		
 		if(out != INVALID_HANDLE_VALUE)
@@ -312,6 +313,7 @@ BOOL liner(const char *src, const char *dst, linerRule_t *rules)
 				{
 					if(readed == 1)
 					{
+						fpos++;
 						switch(c)
 						{
 							case '\r':
@@ -327,7 +329,7 @@ BOOL liner(const char *src, const char *dst, linerRule_t *rules)
 									{
 										if(strcmp(linebuf, r->line_match) == 0)
 										{
-											ignore_line = !r->action(linebuf, linepos);
+											ignore_line = !r->action(linebuf, linepos, fpos);
 											
 											if(r->last_rule) break;
 										}
@@ -336,7 +338,7 @@ BOOL liner(const char *src, const char *dst, linerRule_t *rules)
 									{
 										if(strstr(linebuf, r->line_match) != NULL)
 										{
-											ignore_line = !r->action(linebuf, linepos);
+											ignore_line = !r->action(linebuf, linepos, fpos);
 											
 											if(r->last_rule) break;
 										}
@@ -411,4 +413,60 @@ BOOL addLine(const char *target, const char *line)
 	}
 	
 	return FALSE;
+}
+
+BOOL truncateFile(const char *target, size_t position, char **rest_of_file, size_t *rest_size)
+{
+	removeROFlag(target);
+	
+	HANDLE file = CreateFileA(target, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(file != INVALID_HANDLE_VALUE)
+	{
+		SetFilePointer(file, position, NULL, FILE_BEGIN);
+		if(rest_of_file != NULL)
+		{
+			DWORD fs = GetFileSize(file, NULL);
+			*rest_size = fs - position;
+			*rest_of_file = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, *rest_size);
+			if(*rest_of_file != NULL)
+			{
+				DWORD readed = 0;
+				ReadFile(file, *rest_of_file, *rest_size, &readed, NULL);
+			}
+			else
+			{
+				return FALSE;
+			}
+			SetFilePointer(file, position, NULL, FILE_BEGIN);
+		}
+		SetEndOfFile(file);
+		CloseHandle(file);
+
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
+BOOL extendFile(const char *target, char *data, size_t data_size)
+{
+	removeROFlag(target);
+
+	HANDLE file = CreateFileA(target, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(file != INVALID_HANDLE_VALUE)
+	{
+		DWORD junk;
+		
+		SetFilePointer(file, 0, NULL, FILE_END);
+		WriteFile(file, data, data_size, &junk, NULL);
+		CloseHandle(file);
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+void freeTruncateData(char *data)
+{
+	HeapFree(GetProcessHeap(), 0, data);
 }

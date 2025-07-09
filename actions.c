@@ -41,6 +41,7 @@ static char install_path[MAX_PATH];
 static const char *src_path = NULL;
 static const char *dx_path = NULL;
 static const char *ie_path = NULL;
+static const char *tray_patch = NULL;
 
 static BOOL forced_shutdown = FALSE;
 static BOOL driver_installed = FALSE;
@@ -58,6 +59,15 @@ void setDXpath(const char *dx)
 void setIEpath(const char *ie)
 {
 	ie_path = ie;
+}
+
+void setTrayPath(const char *path_to_tray)
+{
+	static char s_tray_path[MAX_PATH];
+	strcpy(s_tray_path, path_to_tray);
+	strcat(s_tray_path, "\\tray3d.exe");
+
+	tray_patch = s_tray_path;
 }
 
 BOOL failure_continue(HWND hwnd)
@@ -252,7 +262,7 @@ const char *dirname(const char *full_path)
 	return buf;
 }
 
-BOOL install_run(const char *setup_path, HANDLE *pi_proc, HANDLE *pi_thread, BOOL runAndExit)
+static BOOL install_run(const char *setup_path, char *cmd_line, HANDLE *pi_proc, HANDLE *pi_thread, BOOL runAndExit)
 {
 	STARTUPINFOA si;
 	PROCESS_INFORMATION pi;
@@ -262,7 +272,7 @@ BOOL install_run(const char *setup_path, HANDLE *pi_proc, HANDLE *pi_thread, BOO
 	
 	si.cb = sizeof(si);
 	
-	if(CreateProcessA(setup_path, NULL, NULL, NULL, FALSE, DETACHED_PROCESS, NULL, dirname(setup_path), &si, &pi))
+	if(CreateProcessA(setup_path, cmd_line, NULL, NULL, FALSE, DETACHED_PROCESS, NULL, dirname(setup_path), &si, &pi))
 	{
 		*pi_proc = pi.hProcess;
     *pi_thread =  pi.hThread;
@@ -341,13 +351,13 @@ void install_infobox(HWND hwnd, const char *name)
 BOOL mscv_start(HWND hwnd)
 {
 	install_infobox(hwnd, "VC6 redistributable");
-	return install_run(iniValue("[softgpu]", "msvcrtpath"), &pi_proc, &pi_thread, TRUE);
+	return install_run(iniValue("[softgpu]", "msvcrtpath"), NULL, &pi_proc, &pi_thread, TRUE);
 }
 
 BOOL dotcom_start(HWND hwnd)
 {
 	install_infobox(hwnd, ".COM for Windows 95");
-	return install_run(iniValue("[softgpu]", "dcom95path"), &pi_proc, &pi_thread, TRUE);
+	return install_run(iniValue("[softgpu]", "dcom95path"), NULL, &pi_proc, &pi_thread, TRUE);
 }
 
 BOOL ws2_start(HWND hwnd)
@@ -359,7 +369,7 @@ BOOL ws2_start(HWND hwnd)
 	
 	if(r == IDYES)
 	{
-		return install_run(iniValue("[softgpu]", "ws2path"), &pi_proc, &pi_thread, TRUE);
+		return install_run(iniValue("[softgpu]", "ws2path"), NULL, &pi_proc, &pi_thread, TRUE);
 	}
 	
 	forced_shutdown = TRUE;
@@ -413,13 +423,19 @@ BOOL dx_start(HWND hwnd)
 	
 	delete_bad_dx_files();
 	
-	return install_run(dx_path, &pi_proc, &pi_thread, TRUE);
+	return install_run(dx_path, NULL, &pi_proc, &pi_thread, TRUE);
 }
 
 BOOL ie_start(HWND hwnd)
 {
 	install_infobox(hwnd, "Internet Explorer");
-	return install_run(ie_path, &pi_proc, &pi_thread, TRUE);
+	return install_run(ie_path, NULL, &pi_proc, &pi_thread, TRUE);
+}
+
+BOOL kill_tray(HWND hwnd)
+{
+	(void)hwnd;
+	return install_run(tray_patch, "tray3d.exe /kill", &pi_proc, &pi_thread, FALSE);
 }
 
 BOOL setup_end(HWND hwnd)
@@ -752,10 +768,11 @@ BOOL filescopy_result(HWND hwnd)
 	return TRUE;
 }
 
-BOOL setLineSvga(char *buf, size_t bufs)
+BOOL setLineSvga(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
-	
+	(void)fpos;
+
 	strcpy(buf, "CopyFiles=VMSvga.Copy");
 	if(isSettingSet(CHBX_WINE))
 	{
@@ -770,10 +787,11 @@ BOOL setLineSvga(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setLineVbox(char *buf, size_t bufs)
+BOOL setLineVbox(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
-	
+	(void)fpos;
+
 	strcpy(buf, "CopyFiles=VBox.Copy");
 	if(isSettingSet(CHBX_WINE))
 	{
@@ -788,10 +806,11 @@ BOOL setLineVbox(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setLineQemu(char *buf, size_t bufs)
+BOOL setLineQemu(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
-	
+	(void)fpos;
+
 	strcpy(buf, "CopyFiles=Qemu.Copy");
 	if(isSettingSet(CHBX_WINE))
 	{
@@ -806,9 +825,10 @@ BOOL setLineQemu(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setLineSvgaReg(char *buf, size_t bufs)
+BOOL setLineSvgaReg(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 
 	strcpy(buf, "AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg");
 
@@ -829,9 +849,10 @@ BOOL setLineSvgaReg(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setLineVboxReg(char *buf, size_t bufs)
+BOOL setLineVboxReg(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 
 	strcpy(buf, "AddReg=VBox.AddReg,VM.AddReg,DX.addReg");
 
@@ -852,9 +873,10 @@ BOOL setLineVboxReg(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setLineQemuReg(char *buf, size_t bufs)
+BOOL setLineQemuReg(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 
 	strcpy(buf, "AddReg=Qemu.AddReg,VM.AddReg,DX.addReg");
 
@@ -875,10 +897,11 @@ BOOL setLineQemuReg(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setLineMeFix(char *buf, size_t bufs)
+BOOL setLineMeFix(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
-	
+	(void)fpos;
+
 	if(version_compare(&sysver, &WINVERME) > 0 &&
 		isSettingSet(CHBX_WINE))
 	{
@@ -896,9 +919,10 @@ BOOL setLineMeFix(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setBug565(char *buf, size_t bufs)
+BOOL setBug565(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 	char *dst = strstr(buf, ",,");
 	if(dst)
 	{
@@ -908,9 +932,10 @@ BOOL setBug565(char *buf, size_t bufs)
 	return FALSE;
 }
 
-BOOL setBugPreferFifo(char *buf, size_t bufs)
+BOOL setBugPreferFifo(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 	char *dst = strstr(buf, ",,");
 	if(dst)
 	{
@@ -920,9 +945,10 @@ BOOL setBugPreferFifo(char *buf, size_t bufs)
 	return FALSE;
 }
 
-BOOL setBugDxFlags(char *buf, size_t bufs)
+BOOL setBugDxFlags(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 	char *dst = strstr(buf, ",,");
 	if(dst)
 	{
@@ -932,9 +958,10 @@ BOOL setBugDxFlags(char *buf, size_t bufs)
 	return FALSE;
 }
 
-BOOL setLimitVRAM(char *buf, size_t bufs)
+BOOL setLimitVRAM(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 	char *dst = strstr(buf, ",,");
 	if(dst)
 	{
@@ -990,10 +1017,11 @@ BOOL setLineSyscopy(char *buf, size_t bufs)
 }
 #endif
 
-BOOL setLine3DFX(char *buf, size_t bufs)
+BOOL setLine3DFX(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
-	
+	(void)fpos;
+
 	if(isSettingSet(CHBX_3DFX))
 	{
 		int line_start = sizeof(";3dfx:")-1;
@@ -1009,9 +1037,10 @@ BOOL setLine3DFX(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setLineSwitcher(char *buf, size_t bufs)
+BOOL setLineSwitcher(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 	
 	BOOL all_on_hal = isSettingSet(RAD_DD_HAL) && isSettingSet(RAD_D8_HAL) && isSettingSet(RAD_D9_HAL);
 	
@@ -1030,9 +1059,10 @@ BOOL setLineSwitcher(char *buf, size_t bufs)
 	return TRUE;
 }
 
-BOOL setMesaAlternate(char *buf, size_t bufs)
+BOOL setMesaAlternate(char *buf, size_t bufs, size_t fpos)
 {
 	(void)bufs;
+	(void)fpos;
 	
 	if(isSettingSet(CHBX_MESA_ALT))
 	{
@@ -1044,6 +1074,17 @@ BOOL setMesaAlternate(char *buf, size_t bufs)
 		}
 	}
 	
+	return TRUE;
+}
+
+static size_t del_section_pos = 0;
+
+BOOL saveDelPos(char *buf, size_t bufs, size_t fpos)
+{
+	(void)bufs;
+	(void)buf;
+	del_section_pos = fpos;
+
 	return TRUE;
 }
 
@@ -1066,6 +1107,7 @@ linerRule_t infFixRules[] = {
 	{"vmwsgl32.dll=1",                                                 TRUE, TRUE, setMesaAlternate},
 	{"mesa98.dll=1",                                                   TRUE, TRUE, setMesaAlternate},
 	{"mesa99.dll=1",                                                   TRUE, TRUE, setMesaAlternate},
+	{"HKR,CURRENT",                                                    TRUE, TRUE, saveDelPos},
 	{NULL, FALSE, FALSE, NULL}
 };
 
@@ -1087,10 +1129,11 @@ BOOL infFixer(HWND hwnd)
 	return liner(srcfile, dstfile, infFixRules);
 }
 
-BOOL ignore_line(char *buf, size_t bufs)
+BOOL ignore_line(char *buf, size_t bufs, size_t fpos)
 {
 	(void)buf;
 	(void)bufs;
+	(void)fpos;
 	
 	return FALSE;
 }
@@ -1170,6 +1213,33 @@ BOOL set_inf_regs(HWND hwnd)
 	return TRUE;
 }
 
+void apply_delete(const char *target)
+{
+	char *data;
+	size_t data_size;
+	
+	if(del_section_pos == 0)
+		return;
+	
+	if(!truncateFile(target, del_section_pos, &data, &data_size))
+		return;
+
+	const char *line = NULL;
+	int index = 0;
+	for(; (line = iniLine("[delete]", index)) != NULL; index++)
+	{
+		if(line[0] == 'H' && line[1] == 'K')
+		{
+			registryDeleteKeyInf(line, target);
+			//addLine(target, line);
+		}
+	}
+	
+	extendFile(target, data, data_size);
+	freeTruncateData(data);
+	
+}
+
 BOOL apply_reg_fixes(HWND hwnd)
 {
 	const char *line = NULL;
@@ -1181,6 +1251,8 @@ BOOL apply_reg_fixes(HWND hwnd)
 	strcpy(dstfile, install_path);
 	strcat(dstfile, "\\");
 	strcat(dstfile, iniValue("[softgpu]", "drvfile"));
+
+	apply_delete(dstfile);
 	
 	//if(version_compare(&sysver, &WINVERME) < 0)
 	if(1) /* delete in all cases */

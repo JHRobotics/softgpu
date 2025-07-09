@@ -94,3 +94,25 @@ virtualHW.version = "9"
 5) Save file, start VM and run *glchecker* to verify setting:
 
 ![VMware Player + SoftGPU](resource/docs/vmw-player.png)
+
+## Known bugs
+
+### VRAM limitation
+
+In VMware Workstation 17 is framebuffer memory limited by 16 MB, unlike VirtualBox and QEMU, VRAM setting only reserves I/O space, which can (in theory) remapped by GMR[^1], but real R/W memory is only at first 16 MB.
+
+This limits 32 bpp resolutions to 1920 x 1080 x 32, because virtual GPU also cannot move screen memory origin (flip - method to fast swap 2 screen buffer), and this behaviour is emulated by extra screen buffer and DMA copy operation between front buffer (as OS see it) and real visible buffer (as user see it). So when you have 1920 x 1080 you need, 1920 x 1080 x 4 x 2 = 15,8 MB VRAM. When you want to use "double" buffering, resolution is limited to 1280 x 1024 x 32 (= 15 MB VRAM).
+
+When using 16 bpp resolutions, please keep in mind, that visible buffer is 32 bpp in every case (all acceleration functions works only in 32 bpp) and virtual front buffer (16 bpp) is converted to 32 bpp every time when is changed. Memory consummation for 1920 x 1200 x 32 is 1920 x 1200 x 4 + 1920 x 1200 x 2 = 13,2 MB VRAM. Double buffer is limited to 1920 x 1080 x 16 resolution.
+
+DirectX HAL driver can catch this situation and it'll allocate textures in RAM, so memory for textures isn't reduced (but you need more RAM, consider to apply memory patch and set RAM to at last 1024 MB).
+
+[^1]: Guest memory region: map between physical RAM (in VM) and vGPU.
+
+### 800 x 600 is broken
+
+When resolution is set to 800 x 600 (or 1600 x 1200) screen is broken like on following screenshot:
+
+![Broken screen](resource/docs/bug-vmw-intel800.png)
+
+This is bug related to Intel Xe driver, to fix this, please update (or downgrade) you Intel GPU driver.

@@ -492,7 +492,7 @@ LRESULT CALLBACK softgpuWndCurProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 static void process_install()
 {
 	setInstallPath(pathinput);
-
+	
 	if(isSettingSet(CHBX_GL95))
 	{
 		action_create("OpenGL95 installation", gl95_start, NULL, NULL);
@@ -512,6 +512,10 @@ static void process_install()
 	{
 		action_create("MSVCRT installation", mscv_start, proc_wait, setup_end);
 	}
+
+	setTrayPath(iniValue("[softgpu]", "drvpath.mmx"));
+
+	action_create("stop Tray3D", kill_tray, proc_wait, setup_end);
 
 	if(isSettingSet(CHBX_DX))
 	{

@@ -10,6 +10,7 @@ BOOL registryDelete(const char *path);
 BOOL registryWriteInfDWORD(const char *path, DWORD dw, const char *inf);
 BOOL registryDeleteInf(const char *path, const char *inf);
 BOOL registryWriteInf(const char *path, const char *str, int type, const char *inf);
+BOOL registryDeleteKeyInf(const char *path, const char *inf);
 
 #define WINREG_DWORD 1
 #define WINREG_STR   2

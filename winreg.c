@@ -306,7 +306,7 @@ BOOL registryWriteInf(const char *path, const char *str, int type, const char *i
 BOOL registryWriteInfDWORD(const char *path, DWORD dw, const char *inf)
 {
 	static char buf[DW_BUF];
-	
+
 	sprintf(buf, "0x%X", dw);
 	return registryWriteInf(path, buf, WINREG_DWORD, inf);
 }
@@ -328,14 +328,57 @@ BOOL registryDeleteInf(const char *path, const char *inf)
 				break;
 			}
 		}
-		
+
 		if(root_inf != NULL)
 		{
-			sprintf(inf_line, "%s,%s,%s,0x00000004\r\n", root_inf, key, subkey);
-			
+			if(subkey == NULL)
+			{
+				sprintf(inf_line, "%s,%s,,0x00000004\r\n", root_inf, key);
+			}
+			else
+			{
+				sprintf(inf_line, "%s,%s,%s,0x00000004\r\n", root_inf, key, subkey);
+			}
+
 			return addLine(inf, inf_line);
 		}
 	}
-	
+
+	return FALSE;
+}
+
+BOOL registryDeleteKeyInf(const char *path, const char *inf)
+{
+	HKEY root;
+	const char *key;
+	const char *subkey;
+	const char *root_inf = NULL;
+
+	if(registrySplitPath(path, &root, &key, &subkey))
+	{
+		for(const rootkey_t *rt = &rootkeys[0]; rt->name != NULL; rt++)
+		{
+			if(rt->key == root)
+			{
+				root_inf = rt->inf_root;
+				break;
+			}
+		}
+
+		if(root_inf != NULL)
+		{
+			if(subkey == NULL)
+			{
+				sprintf(inf_line, "%s,%s\r\n", root_inf, key);
+			}
+			else
+			{
+				sprintf(inf_line, "%s,%s\\%s\r\n", root_inf, key, subkey);
+			}
+
+			return addLine(inf, inf_line);
+		}
+	}
+
 	return FALSE;
 }

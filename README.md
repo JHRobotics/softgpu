@@ -11,10 +11,11 @@ This is ready-to-use compilation of my 6 projects:
 - ICD enabled fork of qemu-3dfx: https://github.com/JHRobotics/qemu-3dfx
 
 ## Requirements
-1) Virtual machine with one of these VGA adapter support:
-   - A) Bochs VBE (Bochs, VirtualBox, Qemu)
-   - B) VMware SVGA-II (VMware, VirtualBox, Qemu)
-2) Windows 95/98/Me as VM guest system
+1) Machine with one of these VGA adapter support:
+   - A) Virtual machine supporting Bochs VBE (Bochs, VirtualBox, Qemu)
+   - B) Virtual machine supporting VMware SVGA-II (VMware, VirtualBox, Qemu)
+   - C) Real or virtual machine with video adapter supporting VESA VBE 2.0 at minimum
+2) Windows 95/98/Me as VM guest system (or main system at bare metal):
    - A) Windows 98/Me - required is last version of DirectX 9 (included in package)
    - B) Windows 95
       - Last version of DirectX 8 (included in package)
@@ -37,7 +38,8 @@ This is ready-to-use compilation of my 6 projects:
 | VMware Workstation | 16, 17     |    -     |     ✔      |   ✔   |   ✔   |   ⚠   |   ✔    | speaker, SBPCI128          |
 | QEMU               | 7.x, 8.0   |   std    |     ✔      |   ✔   |   ✔   |   ✔   |   ❌    | speaker, adlib, GUS, SB16, WSS, AC97, SBPCI128 |
 | QEMU               | 7.x, 8.0   |  vmware  |     ✔      |   ✔   |   ❌   |   ❌   |   ❌    | speaker, adlib, GUS, SB16, WSS, AC97, SBPCI128 |
-| QEMU               | 7.x, 8.0   |   std + qemu-3dfx    |     ✔      |   ✔   |   ✔   |   ✔   |   ✔    | speaker, adlib, GUS, SB16, WSS, AC97, SBPCI128 |           
+| QEMU               | 7.x, 8.0   |   std + qemu-3dfx    |     ✔      |   ✔   |   ✔   |   ✔   |   ✔    | speaker, adlib, GUS, SB16, WSS, AC97, SBPCI128 |
+| _Real Hardware_  | - | VESA 2.0/3.0 | ✔ | ✔ | ✔| ✔ | ❌ | _depends on configuration_ |
 
 SoftGPU can use 4 render drivers:
 - *softpipe*: software Mesa3D reference renderer

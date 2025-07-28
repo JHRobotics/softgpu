@@ -98,6 +98,11 @@ static const settings_item_t settings_def[] =
 	{CHBX_DMA_TO_FB,       T_CHECKBOX,  41, "dmatofb",   0, NULL, NULL, 0, 0},
 	{CHBX_HWCURSOR,        T_CHECKBOX,  42, "hwcursor",  0, NULL, NULL, 0, 0},
 	{CHBX_MESA_ALT,        T_CHECKBOX,  44, "mesa_alt",  0, NULL, NULL, 0, 0},
+	{CHBX_NO_INSTALL,      T_CHECKBOX,  47, "no_install",0, NULL, NULL, 0, 0},
+	{RAD_LOWDETAIL_0,      T_RADIO,     48, "no_lowdetail",    1, NULL, NULL, 5, 0},
+	{RAD_LOWDETAIL_1,      T_RADIO,     49, "lowdetail_lev1",  0, NULL, NULL, 5, 0},
+	{RAD_LOWDETAIL_2,      T_RADIO,     50, "lowdetail_lev2",  0, NULL, NULL, 5, 0},
+	{RAD_LOWDETAIL_3,      T_RADIO,     51, "lowdetail_lev3",  0, NULL, NULL, 5, 0},
 	{0,                    0,            0, NULL,        0, NULL, NULL, 0, 0}
 };
 
@@ -496,17 +501,26 @@ void settingsReset()
 	
 	settingsCompute();
 	
-	const char *defProfile = iniValue("[softgpu]", "default_profile");
-	if(defProfile != NULL)
+	if(get_gpu_profile() >= 0)
 	{
-		DWORD p = strtoul(defProfile, NULL, 0);
+		DWORD p = get_gpu_profile();
 		settingsSetByName("profile", p);
 		settingsApplyProfile(p);
-		//printf("profile: %u\n", p);
 	}
 	else
 	{
-		settingsApplyProfile(0);
+		const char *defProfile = iniValue("[softgpu]", "default_profile");
+		if(defProfile != NULL)
+		{
+			DWORD p = strtoul(defProfile, NULL, 0);
+			settingsSetByName("profile", p);
+			settingsApplyProfile(p);
+			//printf("profile: %u\n", p);
+		}
+		else
+		{
+			settingsApplyProfile(0);
+		}
 	}
 	
 	const char *defPath = iniValue("[softgpu]", "default_path");

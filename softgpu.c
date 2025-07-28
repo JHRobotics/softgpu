@@ -133,6 +133,8 @@ BOOL     hasSETUPAPI = FALSE;
 uint32_t hasSSE3 = 0;
 uint32_t hasSSE42 = 0;
 uint32_t hasAVX = 0;
+uint32_t hasCPUID = 0;
+uint32_t hasP2    = 0;
 BOOL     hasOpengl = FALSE;
 BOOL     hasOle32  = FALSE;
 BOOL     hasWS2    = FALSE;
@@ -193,6 +195,17 @@ void readCPUInfo()
 	http://software.intel.com/en-us/blogs/2011/04/14/is-avx-enabled/ */
 	__asm(
 		"pusha\n"
+		"pushf\n"                   // push eflags on the stack
+		"pop  %%eax\n"              // pop them into eax
+		"movl %%eax, %%ebx\n"       // save to ebx for restoring afterwards
+		"xorl $0x200000, %%eax\n"   // toggle bit 21
+		"push %%eax\n"              // push the toggled eflags
+		"popf\n"                    // pop them back into eflags
+		"pushf\n"                   // push eflags
+		"pop %%eax\n"               // pop them back into eax
+		"cmpl %%ebx, %%eax\n"       // see if bit 21 was reset
+		"jz not_supported\n"
+		"movl $1, %1\n"
 		"xorl %%eax, %%eax\n"
 		"cpuid\n"
 		"cmpl $1, %%eax\n"             // does CPUID support eax = 1?
@@ -212,62 +225,79 @@ void readCPUInfo()
 		"not_supported:\n"
 		"movl $0, %0\n"
 		"end:\n"
-		"popa" : "=m" (hasAVX));
-  
-	if(version_compare(&sysver, &WINVER98) >= 0) /* in 98 SSE supported if they are present */
-	{
+		"popa" : "=m" (hasAVX), "=m" (hasCPUID));
+
+  if(hasCPUID)
+  {
 		__asm(
 			"pusha\n"
-			"movl $0, %0\n"
-			"movl $0, %1\n"
 			"xorl %%eax, %%eax\n"
 			"cpuid\n"
 			"cmpl $1, %%eax\n"             // does CPUID support eax = 1?
-			"jb end_sse\n"
+			"jb end_p2\n"
 			"movl $1, %%eax\n"
 			"cpuid\n"
-			"andl $0x06000000, %%edx\n"   // check 25 and 26 - SSE and SSE2
-			"cmpl $0x06000000, %%edx\n" 
-			"jne end_sse\n"
-			"mov %%ecx, %%eax\n"
-			"andl $0x00000201, %%eax\n"   // check 0 and 9 - SSE3 and SSSE3
-			"cmpl $0x00000201, %%eax\n"
-			"jne end_sse\n" // SSE1, SSE2, SSE3, SSSE3
-			"movl $1, %0\n"
-			"andl $0x00180000, %%ecx\n"   // check 19, 20 - SSE3 and SSE4.1 SSE4.2
-			"cmpl $0x00180000, %%ecx\n"
-			"jne end_sse\n" // SSE4.1, SSE4.2
-			"movl $1, %1\n"
-			"jmp end_sse\n"
-			"end_sse:\n"
-			"popa" : "=m" (hasSSE3), "=m" (hasSSE42));
-	}
-	else
-	{
-		/*
-		 * win 95, if XSAVE is enable, SSE present too, I need write better test
-		 * (probably exec some sse instruction and catch exeption)
-		 *
-		 */
-	  __asm(
-			"pusha\n"
-			"xorl %%eax, %%eax\n"
-			"cpuid\n"
-			"cmpl $1, %%eax\n"
-			"jb not_supported_sse95\n"
-			"mov $1, %%eax\n"
-			"cpuid\n"
-			"andl $0x08000000, %%ecx\n" // we simly check for enable xstore
-			"cmpl $0x08000000, %%ecx\n" // i still haven't come up with better test
-			"jne not_supported_sse95\n"
-			"movl $1, %0\n"
-			"jmp end_sse95\n"
-			"not_supported_sse95:\n"
-			"movl $0, %0\n"
-			"end_sse95:\n"
-			"popa" : "=m" (hasSSE3));
-	}
-  
+			"andl $0x01800000, %%edx\n"   // check MMX and FXSR
+			"cmpl $0x01800000, %%edx\n" 
+			"jne end_p2\n"
+			"mov $1, %0\n"
+			"end_p2:\n"
+			"popa" : "=m" (hasP2));
+
+		if(version_compare(&sysver, &WINVER98) >= 0) /* in 98 SSE supported if they are present */
+		{
+			__asm(
+				"pusha\n"
+				"movl $0, %0\n"
+				"movl $0, %1\n"
+				"xorl %%eax, %%eax\n"
+				"cpuid\n"
+				"cmpl $1, %%eax\n"             // does CPUID support eax = 1?
+				"jb end_sse\n"
+				"movl $1, %%eax\n"
+				"cpuid\n"
+				"andl $0x06000000, %%edx\n"   // check 25 and 26 - SSE and SSE2
+				"cmpl $0x06000000, %%edx\n" 
+				"jne end_sse\n"
+				"mov %%ecx, %%eax\n"
+				"andl $0x00000201, %%eax\n"   // check 0 and 9 - SSE3 and SSSE3
+				"cmpl $0x00000201, %%eax\n"
+				"jne end_sse\n" // SSE1, SSE2, SSE3, SSSE3
+				"movl $1, %0\n"
+				"andl $0x00180000, %%ecx\n"   // check 19, 20 - SSE3 and SSE4.1 SSE4.2
+				"cmpl $0x00180000, %%ecx\n"
+				"jne end_sse\n" // SSE4.1, SSE4.2
+				"movl $1, %1\n"
+				"jmp end_sse\n"
+				"end_sse:\n"
+				"popa" : "=m" (hasSSE3), "=m" (hasSSE42));
+		}
+		else
+		{
+			/*
+			 * win 95, if XSAVE is enable, SSE present too, I need write better test
+			 * (probably exec some sse instruction and catch exeption)
+			 *
+			 */
+		  __asm(
+				"pusha\n"
+				"xorl %%eax, %%eax\n"
+				"cpuid\n"
+				"cmpl $1, %%eax\n"
+				"jb not_supported_sse95\n"
+				"mov $1, %%eax\n"
+				"cpuid\n"
+				"andl $0x08000000, %%ecx\n" // we simly check for enable xstore
+				"cmpl $0x08000000, %%ecx\n" // i still haven't come up with better test
+				"jne not_supported_sse95\n"
+				"movl $1, %0\n"
+				"jmp end_sse95\n"
+				"not_supported_sse95:\n"
+				"movl $0, %0\n"
+				"end_sse95:\n"
+				"popa" : "=m" (hasSSE3));
+		}
+  }
 }
 
 void softgpu_sysinfo()
@@ -277,12 +307,14 @@ void softgpu_sysinfo()
 	
 	static char buf[50];
 	
+	readCPUInfo();
+	
 	if(registryRead("HKLM\\SOFTWARE\\Microsoft\\DirectX\\Version", buf, 50))
 	{
 		version_parse(buf, &dxver);
 	}
 	
-	if(version_compare(&sysver, &WINVER98) >= 0)
+	if(version_compare(&sysver, &WINVER98) >= 0 && hasP2)
 	{
 		version_parse(iniValue("[softgpu]", "dx9target"), &dxtarget);
 	}
@@ -320,8 +352,6 @@ void softgpu_sysinfo()
 		FreeLibrary(testLib);
 	}
 	
-	readCPUInfo();
-	
 	reinstall_dx = checkDXReinstall();
 		
 	sprintf(sysinfomsg,
@@ -331,6 +361,8 @@ void softgpu_sysinfo()
 		"MSVCRT.dll: %s\n"
 		"SETUPAPI.dll: %s\n"
 		"opengl32.dll: %s\n"
+		"CPUID: %s\n"
+		"MMX+FXSR: %s\n"
 		"SSE: %s\n"
 		"AVX: %s\n",
 		sysver.major, sysver.minor, sysver.patch, sysver.build,
@@ -339,6 +371,8 @@ void softgpu_sysinfo()
 		hasCRT ? "yes" : "no",
 		hasSETUPAPI ? "yes" : "no",
 		hasOpengl ? "yes" : "no",
+		hasCPUID ? "yes" : "no",
+		hasP2    ? "Pentium II+" : "no",
 		hasSSE42 ? "4.2" : (hasSSE3 ? "3" : "no"),
 		hasAVX  ? "yes" : "no"
 	);
@@ -519,11 +553,11 @@ static void process_install()
 
 	if(isSettingSet(CHBX_DX))
 	{
-		if(version_compare(&sysver, &WINVER98SE) >= 0)
+		if(version_compare(&sysver, &WINVER98SE) >= 0 && hasP2)
 		{
 			setDXpath(iniValue("[softgpu]", "dx9path"));
 		}
-		else if(version_compare(&sysver, &WINVER98) >= 0)
+		else if(version_compare(&sysver, &WINVER98) >= 0 && hasP2)
 		{
 			setDXpath(iniValue("[softgpu]", "dx9path.fe"));
 		}

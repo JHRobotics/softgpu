@@ -1,3 +1,9 @@
+0.8.2025.52
+! VESA display driver
+! VBOX: page fault in VBox VGA driver
+- small stability improvements
+- fixed corrupted driver inf in some cases
+
 0.8.2025.51
 - VMware: VRAM test (VMware bug)
 - QEMU: vmware adapter compatibility fixes

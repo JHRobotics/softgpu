@@ -118,6 +118,11 @@
 
 #define CHBX_MESA_ALT 59
 
+#define RAD_LOWDETAIL_0 60
+#define RAD_LOWDETAIL_1 61
+#define RAD_LOWDETAIL_2 62
+#define RAD_LOWDETAIL_3 63
+
 BOOL isSettingSet(DWORD menu);
 void writeSettings();
 int intSettings(int type);
@@ -142,6 +147,7 @@ extern BOOL      hasSETUPAPI;
 extern uint32_t  hasSSE3;
 extern uint32_t  hasSSE42;
 extern uint32_t  hasAVX;
+extern uint32_t  hasP2;
 extern BOOL      hasOpengl;
 extern BOOL      hasOle32;
 extern BOOL      hasWS2;
@@ -195,6 +201,6 @@ extern char msg_gpu_names[];
 void check_SW_HW();
 int detection_status();
 int installable_status();
-
+int get_gpu_profile();
 
 #endif /* __SOFTGPU_H__INCLUDED__ */

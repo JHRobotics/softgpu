@@ -10,7 +10,7 @@ ifdef DEBUG
   CFLAGS=-std=c99 -Wall -Wextra -g -O0 -march=pentium2 -fdata-sections -ffunction-sections
 else
   LIBS=-lgdi32 -luser32 -ladvapi32 -lkernel32 -lshell32 -lversion -Wl,-subsystem,windows
-  CFLAGS=-std=c99 -Wall -Wextra -Os -march=pentium2 -fdata-sections -ffunction-sections
+  CFLAGS=-std=c99 -Wall -Wextra -Os -march=i486 -fdata-sections -ffunction-sections
 endif
 
 SOFTGPU_PATCH=2025

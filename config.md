@@ -44,13 +44,14 @@ HKEY_LOCAL_MACHINE\Software\vmdisp9x
          - d3d9
   + driver = universal display settings
   + svga = display settings related to VMware SVGA-II gpu
+  + vesa = display settings related to VESA driver
 ```
 
 NOTE: you can enter numeric values as DWORD or as string, it'll be converted automatically.
 
 ## Universal display settings
 
-| Name              | Default value | Desctiption |
+| Name              | Default value | Description |
 | ----------------- | -----------   | ----------- |
 | FORCE_SOFTWARE    | 0             | 1 to use software OpenGL even if there is HW accelerated |
 | FORCE_QEMU3DFX    | 0             | 1 when you has working QEMU-3Dfx wrapper |
@@ -62,7 +63,7 @@ NOTE: you can enter numeric values as DWORD or as string, it'll be converted aut
 
 ## SVGA driver
 
-| Name              | Default value | Desctiption |
+| Name              | Default value | Description |
 | ----------------- | -----------   | ----------- |
 | HWCursor          | 0             | 1 enable HW cursor, 0 draw cursor by software |
 | VRAMLimit         | 128           | limits maximum of VRAM (for Win9x maximum around 256) | 
@@ -75,6 +76,18 @@ NOTE: you can enter numeric values as DWORD or as string, it'll be converted aut
 | AsyncMOBs         | 1             | number of MOBs to be created simulately |
 | NoScreenAccel     | 0             | when enable, all frame buffer operation will be done strictly by CPU |
 
+## VESA driver
+
+| Name | Default value | Description |
+| ---- | ------------- | ----------- |
+| VRAMLimit | 128      | Maximum video RAM (in MB) exposed to system, allow to use adapters when have more then 256 MB VRAM, VRAM is usually utilized only by frame buffers, 32 MB is usually enough for FullHD resolution (1920 x 1080).
+| MTRR | 1             | Allow to use Intel MTRR registry to accelerate CPU to VRAM operations |
+| DosWindowSetMode | 0 | Allow to DOS application to call set mode when DOS application is in window mode |
+
+
+### DosWindowSetMode
+
+[More description in VMDisp9x readme](https://github.com/JHRobotics/vmdisp9x?tab=readme-ov-file#dos-in-window)
 
 ## HAL
 
@@ -90,13 +103,30 @@ NOTE: you can enter numeric values as DWORD or as string, it'll be converted aut
 | touchdepth        | yes             | 0             | when 1, depth buffer is read and write from and to surface, slow, only need when application needs manipulate with depth buffer |
 | filter_bug        | yes             | auto          | SVGA driver has bug when filtering isn't applied correctly |
 | s3tc_bug          | yes             | 1             | software conversion of S3 style compressed textures |
+| lowdetail         | yes             | 0             | reduce detail, from 0 (no detail reduction) to 3 (lowest detail) |
+
+### lowdetail
+
+This setting allow turn off some graphical feature to faster rendering. Note: this setting affect only software 3D, respective detail reduction will be visible on HW and SW renderer but only on SW renderer affect performance. 
+
+| Level | Description |
+| ----- | ----------- |
+| 0     | All graphical features on |
+| 1     | Disabled dithering and edge antialiasing |
+| 2     | level 1 + texture filtering is forced to nearest neighbour including mipmaps |
+| 3     | level 2 + shading is forced to flat |
+
+I recommend to use Level 1 every time when SW rendering is ON. On Level 2 games usually looks like old games when switched to software renderer. Level 3 has visible artefact when lighting is used. When you need more FPS from SW renderer, please reduce resolution, you can also try to turn off HW T&L (set `hwtl` to `0`), SW T&L done in DX runtime is paradoxically faster that than HW T&L performed by SW renderer.
 
 
 ## MESA
 
-"MESA_EXTENSION_MAX_YEAR"="2000"
-"LP_NATIVE_VECTOR_WIDTH"="256"
+These keys have same names and behaviour like [Mesa Environment Variables](https://docs.mesa3d.org/envvars.html), so there are few important values
 
+| Name | Default | Description |
+| ---- | ------- | ----------- |
+| LP_NATIVE_VECTOR_WIDTH | 128 | CPU register size for LLVM pipe renderer, 128 = SSE, or 256 = AVX, when you have AVX support in CPU and enabled support in system, you can set this variable to 256 for faster software rendering |
+| MESA_EXTENSION_MAX_YEAR | - | The string with OpenGL extensions too long to cause buffer overflow in old games (Q2 and Q3 engines games). When enter year, the newer extension is not listed (but still works). Usually good values are '2004' or '2006'. Because HAL and WINE internally using Mesa, please do not set this setting globally.|
 
 
 ## OpenGlide

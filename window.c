@@ -122,7 +122,7 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 		rdpiY = dpi10 / 96.0f;
 	}
 	
-	if(version_compare(&sysver, &WINVER98) >= 0)
+	if(version_compare(&sysver, &WINVER98) >= 0 && hasP2)
 	{
 		strcpy(dxname, "Install DirectX 9");
 	}
@@ -262,11 +262,10 @@ void softgpu_window_create(HWND hwnd, LPARAM lParam)
 	
 	draw_x = DRAW_START_X;
 	draw_y += LINE_HEIGHT + LINE_QL;
-	
-	LABEL(0,                120, LINE_HEIGHT, "Detected GPU:", 0);
-	
 
-	LABEL(0, LINE_WIDTH2, LINE_HEIGHT, msg_gpu_names, SS_NOPREFIX);
+	LABEL(0, 40, LINE_HEIGHT, "GPU:", 0);
+
+	LABEL(0, 560-50, LINE_HEIGHT, msg_gpu_names, SS_NOPREFIX);
 	draw_y += LINE_HEIGHT;
 	draw_x = DRAW_START_X;
 	
@@ -346,52 +345,53 @@ void softgpu_cur_window_create(HWND hwnd, LPARAM lParam)
 	draw_x = DRAW_START_X;
 	draw_y = DRAW_START_Y;
 	
-	LABEL(0,             200, LINE_HEIGHT, "VRAM limit (MB): ", 0);
-	INPUT(INP_VRAM_LIMIT, 50, LINE_HEIGHT, "", 0);
+	LABEL(0,                                  200,   LINE_HEIGHT, "VRAM limit (MB): ", 0);
+	INPUT(INP_VRAM_LIMIT,                      50,   LINE_HEIGHT, "", 0);
 	
 	draw_x = DRAW_START_X;
-	draw_y += LINE_HEIGHT + LINE_HL;
+	draw_y += LINE_HEIGHT;
 	
 	DRAW_DIRECTION_DOWN;
 	
-	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "SVGA settings", 0);
+	CHECKBOX(CHBX_MESA_ALT,            CUST_WIDTH/2,   LINE_HEIGHT, "Mesa3D 25.1.x");
 
-	CHECKBOX(CHBX_DMA_TO_FB,           CUST_WIDTH,   LINE_HEIGHT, "DMA surface to framebuffer (VB)");
-	CHECKBOX(CHBX_HWCURSOR,            CUST_WIDTH,   LINE_HEIGHT, "HW cursor (in some VB bugged)");
+	LABEL(0,                           CUST_WIDTH/2,   LINE_HEIGHT, "Detail reduction:", 0);
+	draw_x = DRAW_START_X+CUST_WIDTH/2;	
+	draw_y -= LINE_HEIGHT;
 
-	CHECKBOX(CHBX_BUG_DX_FLAGS,        CUST_WIDTH,   LINE_HEIGHT, "DX flags (VB <= 7.0.14)");
-	CHECKBOX(CHBX_BUG_PREFER_FIFO,     CUST_WIDTH,   LINE_HEIGHT, "Prefer FIFO");
-	CHECKBOX(CHBX_BUG_RGB565,          CUST_WIDTH,   LINE_HEIGHT, "RGB565 (VB < 7.0.10, < 6.1.46)");
+	RADIO(RAD_LOWDETAIL_0,             CUST_WIDTH/2,   LINE_HEIGHT, "None",       WS_GROUP);
+	RADIO(RAD_LOWDETAIL_1,             CUST_WIDTH/2,   LINE_HEIGHT, "Little",     0);
+	RADIO(RAD_LOWDETAIL_2,             CUST_WIDTH/2,   LINE_HEIGHT, "Medium",     0);
+	RADIO(RAD_LOWDETAIL_3,             CUST_WIDTH/2,   LINE_HEIGHT, "Aggressive", 0);
 
-	CHECKBOX(CHBX_MESA_ALT,            CUST_WIDTH,   LINE_HEIGHT, "Mesa3D 25.0.x");
+	draw_x = DRAW_START_X;
 
-	CHECKBOX(CHBX_NO_MULTISAMPLE,      CUST_WIDTH,   LINE_HEIGHT, "Disable multisample (VMWare)");
-
-	draw_y += LINE_HEIGHT;
+	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "SVGA settings:", 0);
 	
-	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "Experimental settings", 0);
-//	draw_y += LINE_HL;
+	draw_x += 10;
+
+	CHECKBOX(CHBX_DMA_TO_FB,           CUST_WIDTH-10,   LINE_HEIGHT, "DMA surface to framebuffer (VB)");
+	CHECKBOX(CHBX_HWCURSOR,            CUST_WIDTH-10,   LINE_HEIGHT, "HW cursor (in some VB bugged)");
+
+	CHECKBOX(CHBX_BUG_DX_FLAGS,        CUST_WIDTH-10,   LINE_HEIGHT, "DX flags (VB <= 7.0.14)");
+	CHECKBOX(CHBX_BUG_PREFER_FIFO,     CUST_WIDTH-10,   LINE_HEIGHT, "Prefer FIFO");
+	CHECKBOX(CHBX_BUG_RGB565,          CUST_WIDTH-10,   LINE_HEIGHT, "RGB565 (VB < 7.0.10, < 6.1.46)");
+
+	CHECKBOX(CHBX_NO_MULTISAMPLE,      CUST_WIDTH-10,   LINE_HEIGHT, "Disable multisample (VMWare)");
+
+	draw_x = DRAW_START_X;
+	LABEL(0, CUST_WIDTH, LINE_HEIGHT, "Experimental settings:", 0);
 
 	DRAW_DIRECTION_RIGHT;
-	LABEL(0,             200, LINE_HEIGHT, "Async MOBs: ", 0);
+	draw_x += 10;
+	LABEL(0,             190, LINE_HEIGHT, "Async MOBs: ", 0);
 	INPUT(INP_ASYNCMOBS,  50, LINE_HEIGHT, "", 0);
 	draw_y += LINE_HEIGHT;
-	draw_x = DRAW_START_X;
+	draw_x = DRAW_START_X+10;
 	DRAW_DIRECTION_DOWN;
 
-	CHECKBOX(CHBX_GMR_CACHE,           CUST_WIDTH,   LINE_HEIGHT, "GMR cache (vGPU9, inefficient)");
-	CHECKBOX(CHBX_SW_GAMMA,            CUST_WIDTH,   LINE_HEIGHT, "Enable gamma globaly (slow)");
-
-#if 0
-	DRAW_DIRECTION_RIGHT;
-	LABEL(0,             200, LINE_HEIGHT, "SVGA RAM limit (MB): ", 0);
-	INPUT(IMP_SVGA_MEM_MAX,  50, LINE_HEIGHT, "", 0);
-	draw_x = DRAW_START_X;
-	draw_y += LINE_HEIGHT;
-	DRAW_DIRECTION_DOWN;
-#endif
-
-	//LABEL(0,             200, LINE_HEIGHT, "VB = VirtualBox, VMW = WMware Workstation ", 0);
+	CHECKBOX(CHBX_GMR_CACHE,           CUST_WIDTH-10,   LINE_HEIGHT, "GMR cache (vGPU9, inefficient)");
+	CHECKBOX(CHBX_SW_GAMMA,            CUST_WIDTH-10,   LINE_HEIGHT, "Enable gamma globaly (slow)");
 
 	settingsApply(hwnd);
 }

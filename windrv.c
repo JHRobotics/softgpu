@@ -34,6 +34,7 @@
 #include <devguid.h>
 #include <cfgmgr32.h> /* CM_DEVCAP_Xxx constants */
 
+#include "softgpu.h"
 #include "windrv.h"
 #include "winreg.h"
 #include "setuperr.h"
@@ -136,9 +137,20 @@ BOOL device_parse(const char *hw_ident, vga_device_t *dev)
 					dev->pci.subsys = 0;
 					dev->pci.has_subsys = FALSE;
 				}
-				
+
+				ptr = strstr(hw_ident, "CC_");
+				if(ptr)
+				{
+					//printf("class=%s\n", ptr);
+					dev->pci.cc = strtoul(ptr+3, NULL, 16);
+				}
+				else
+				{
+					dev->pci.cc = 0;
+				}
+
 				//printf("parsed: %04X %04X %08X\n", dev->pci.ven, dev->pci.dev, dev->pci.subsys);
-				
+
 				dev->type = VGA_DEVICE_PCI;
 				return TRUE;
 			}
@@ -210,7 +222,8 @@ const char *device_ini_get(vga_device_t *dev, const char *property)
 				const char *s_ven    = iniSectionsValue("[pci]", i, "ven");
 				const char *s_dev    = iniSectionsValue("[pci]", i, "dev");
 				const char *s_subsys = iniSectionsValue("[pci]", i, "subsys");
-				
+				const char *s_class  = iniSectionsValue("[pci]", i, "class");
+
 				if(s_ven && s_dev)
 				{
 					uint16_t ven_id = strtoul(s_ven, NULL, 0);
@@ -241,6 +254,14 @@ const char *device_ini_get(vga_device_t *dev, const char *property)
 						{
 							return iniSectionsValue("[pci]", i, property);
 						}
+					}
+				}
+				else if(s_class)
+				{
+					uint16_t class_id = strtoul(s_class, NULL, 0);
+					if(class_id == dev->pci.cc)
+					{
+						return iniSectionsValue("[pci]", i, property);
 					}
 				}
 			}
@@ -403,7 +424,16 @@ BOOL loadSETUAPI()
 #  pragma GCC diagnostic ignored "-Wcast-function-type"
 # endif
 
-	hSETUPAPI = LoadLibraryA("SETUPAPI.dll");
+	if(version_compare(&sysver, &WINVER98) >= 0)
+	{
+		hSETUPAPI = LoadLibraryA("SETUPAPI.dll");
+	}
+
+	if(hSETUPAPI == NULL)
+	{
+		hSETUPAPI = LoadLibraryA("redist\\SETUPAPI.dll");
+	}
+	
 	if(hSETUPAPI != NULL)
 	{
 		#define SETUPAPI_FUNC(_t, _n, _a) \
@@ -459,14 +489,23 @@ const char *getVGAadapter(HDEVINFO DeviceInfoSet, SP_DEVINFO_DATA *did_out)
 			{
 				vga_device_t dev;
 				
-				if(device_parse(hwid_str, &dev))
+				// NOTE: hwid_str is REG_MULTI_SZ = multi strings reparated by \0 and terminated by \0\0 (to string is empty)
+				char *hwid_str_ptr = hwid_str;
+				
+				while(hwid_str_ptr[0] != '\0')
 				{
-					const char *section = device_ini_get(&dev, "inf");
-					if(section != NULL)
+					if(device_parse(hwid_str_ptr, &dev))
 					{
-						memcpy(did_out, &DeviceInfoData, sizeof(SP_DEVINFO_DATA));
-						return section;
+						const char *section = device_ini_get(&dev, "inf");
+						if(section != NULL)
+						{
+							memcpy(did_out, &DeviceInfoData, sizeof(SP_DEVINFO_DATA));
+							return section;
+						}
 					}
+
+					size_t strsize = strlen(hwid_str_ptr)+1;
+					hwid_str_ptr += strsize;
 				}
 			}
 	    DeviceIndex++;
@@ -493,9 +532,19 @@ static DWORD checkInstallatioListLookup(HDEVINFO DeviceInfoSet)
 		{
 			if(DYN(SetupDiGetDeviceRegistryPropertyA)(DeviceInfoSet, &DeviceInfoData, SPDRP_HARDWAREID, NULL, (PBYTE)&(device_id[0]), sizeof(device_id), NULL))
 			{
-				if(device_parse(device_id, &devices[devices_cnt]))
+				char *device_id_ptr = device_id;				
+				
+				while(device_id_ptr[0] != '\0')
 				{
-					devices_cnt++;
+					//printf("hwid_str_ptr: %s\n", device_id_ptr);
+					if(device_parse(device_id_ptr, &devices[devices_cnt]))
+					{
+						devices[devices_cnt].device_index = DeviceIndex;
+						devices_cnt++;
+					}
+
+					size_t strsize = strlen(device_id_ptr)+1;
+					device_id_ptr += strsize;
 				}
 			}
 	    DeviceIndex++;
@@ -535,13 +584,13 @@ DWORD checkInstallation()
   return ret;
 }
 
-static void set32bpp()
+static void setBPP(int bpp)
 {
 	DEVMODEA mode;
 	memset(&mode, 0, sizeof(DEVMODEA));
 	mode.dmSize = sizeof(DEVMODEA);
 	mode.dmSpecVersion = DM_SPECVERSION;
-	mode.dmBitsPerPel = 32;
+	mode.dmBitsPerPel = bpp;
 	mode.dmPelsWidth  = 640;
 	mode.dmPelsHeight = 480;
 	mode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
@@ -555,6 +604,7 @@ BOOL installVideoDriver(const char *szDriverDir, const char *infName)
   SP_DEVINSTALL_PARAMS_A DeviceInstallParams = {0};
   SP_DRVINFO_DATA_A drvInfoData = {0};
   SP_DRVINFO_DETAIL_DATA_A DriverInfoDetailData = {0};
+  BOOL is_vesa = FALSE;
 
   DWORD cbReqSize;
 
@@ -653,6 +703,10 @@ BOOL installVideoDriver(const char *szDriverDir, const char *infName)
 	
   if(driverSection != NULL)
 	{
+		if(stricmp(driverSection, "VESA") == 0)
+		{
+			is_vesa = TRUE;
+		}
 		memset(&DeviceInstallParams, 0,sizeof(SP_DEVINSTALL_PARAMS_A));
 		DeviceInstallParams.cbSize = sizeof(SP_DEVINSTALL_PARAMS_A);
 
@@ -720,7 +774,15 @@ BOOL installVideoDriver(const char *szDriverDir, const char *infName)
   closeAndDestroy(hDevInfo, hInf);
   
   /* set screen color depth to some usable value */
-  set32bpp();
+  if(!is_vesa)
+  {
+  	setBPP(32);
+  }
+  else
+  {
+  	/* for VESA is safer to set bpp to 16 */
+  	setBPP(16);
+  }
 
   return TRUE;
 }

@@ -41,8 +41,10 @@ typedef struct vga_device
 			uint16_t dev;
 			uint32_t subsys;
 			BOOL has_subsys;
+			uint32_t cc;
 		} pci;
 	};
+	int device_index;
 } vga_device_t;
 
 #define VGA_DEVICE_ISA 1

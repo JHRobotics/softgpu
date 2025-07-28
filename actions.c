@@ -776,7 +776,7 @@ BOOL setLineSvga(char *buf, size_t bufs, size_t fpos)
 	strcpy(buf, "CopyFiles=VMSvga.Copy");
 	if(isSettingSet(CHBX_WINE))
 	{
-		strcat(buf, ",Dx.Copy,DX.CopyBackup");
+		strcat(buf, ",Dx.Copy");
 	}
 	
 	if(isSettingSet(CHBX_GLIDE))
@@ -795,7 +795,7 @@ BOOL setLineVbox(char *buf, size_t bufs, size_t fpos)
 	strcpy(buf, "CopyFiles=VBox.Copy");
 	if(isSettingSet(CHBX_WINE))
 	{
-		strcat(buf, ",Dx.Copy,DX.CopyBackup");
+		strcat(buf, ",Dx.Copy");
 	}
 	
 	if(isSettingSet(CHBX_GLIDE))
@@ -814,7 +814,26 @@ BOOL setLineQemu(char *buf, size_t bufs, size_t fpos)
 	strcpy(buf, "CopyFiles=Qemu.Copy");
 	if(isSettingSet(CHBX_WINE))
 	{
-		strcat(buf, ",Dx.Copy,DX.CopyBackup");
+		strcat(buf, ",Dx.Copy");
+	}
+	
+	if(isSettingSet(CHBX_GLIDE))
+	{
+		strcat(buf, ",Voodoo.Copy");
+	}
+	
+	return TRUE;
+}
+
+BOOL setLineVesa(char *buf, size_t bufs, size_t fpos)
+{
+	(void)bufs;
+	(void)fpos;
+
+	strcpy(buf, "CopyFiles=VESA.Copy");
+	if(isSettingSet(CHBX_WINE))
+	{
+		strcat(buf, ",Dx.Copy");
 	}
 	
 	if(isSettingSet(CHBX_GLIDE))
@@ -893,6 +912,43 @@ BOOL setLineQemuReg(char *buf, size_t bufs, size_t fpos)
 		strcat(buf, ",VM.R5K");
 	
 	strcat(buf, ",VM.regextra");
+	
+	return TRUE;
+}
+
+BOOL setLineVesaReg(char *buf, size_t bufs, size_t fpos)
+{
+	(void)bufs;
+	(void)fpos;
+
+	strcpy(buf, "AddReg=VESA.AddReg,VM.AddReg,DX.addReg");
+
+	if(isSettingSet(CHBX_QXGA))
+		strcat(buf, ",VM.QXGA");
+	
+	if(isSettingSet(CHBX_1440))
+		strcat(buf, ",VM.WQHD");
+	
+	if(isSettingSet(CHBX_4K))
+		strcat(buf, ",VM.UHD");
+	
+	if(isSettingSet(CHBX_5K))
+		strcat(buf, ",VM.R5K");
+	
+	strcat(buf, ",VM.regextra");
+	
+	return TRUE;
+}
+
+BOOL setDeletes(char *buf, size_t bufs, size_t fpos)
+{
+	(void)bufs;
+	(void)fpos;
+
+	if(isSettingSet(CHBX_FIXES))
+	{
+		strcat(buf, ",VM.DelRegEx");
+	}
 	
 	return TRUE;
 }
@@ -1042,10 +1098,10 @@ BOOL setLineSwitcher(char *buf, size_t bufs, size_t fpos)
 	(void)bufs;
 	(void)fpos;
 	
-	BOOL all_on_hal = isSettingSet(RAD_DD_HAL) && isSettingSet(RAD_D8_HAL) && isSettingSet(RAD_D9_HAL);
+	//BOOL all_on_hal = isSettingSet(RAD_DD_HAL) && isSettingSet(RAD_D8_HAL) && isSettingSet(RAD_D9_HAL);
 	
-	if(!all_on_hal)
-	{
+	//if(!all_on_hal)
+	//{
 		int line_start = sizeof(";switcher:")-1;
 		int line_len  = strlen(buf);
 		int i;
@@ -1054,7 +1110,7 @@ BOOL setLineSwitcher(char *buf, size_t bufs, size_t fpos)
 		{
 			buf[i] = buf[i + line_start];
 		}
-	}
+	//}
 	
 	return TRUE;
 }
@@ -1077,28 +1133,21 @@ BOOL setMesaAlternate(char *buf, size_t bufs, size_t fpos)
 	return TRUE;
 }
 
-static size_t del_section_pos = 0;
-
-BOOL saveDelPos(char *buf, size_t bufs, size_t fpos)
-{
-	(void)bufs;
-	(void)buf;
-	del_section_pos = fpos;
-
-	return TRUE;
-}
-
 linerRule_t infFixRules[] = {
-	{"CopyFiles=VBox.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",          TRUE, TRUE, setLineVbox},
-	{"CopyFiles=VMSvga.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",        TRUE, TRUE, setLineSvga},
-	{"CopyFiles=Qemu.Copy,Dx.Copy,DX.CopyBackup,Voodoo.Copy",          TRUE, TRUE, setLineQemu},
+	{"CopyFiles=VBox.Copy,Dx.Copy,Voodoo.Copy",                        TRUE, TRUE, setLineVbox},
+	{"CopyFiles=VMSvga.Copy,Dx.Copy,Voodoo.Copy",                      TRUE, TRUE, setLineSvga},
+	{"CopyFiles=Qemu.Copy,Dx.Copy,Voodoo.Copy",                        TRUE, TRUE, setLineQemu},
+	{"CopyFiles=VESA.Copy,Dx.Copy,Voodoo.Copy",                        TRUE, TRUE, setLineVesa},
 	{"AddReg=VBox.AddReg,VM.AddReg,DX.addReg,VM.regextra",             TRUE, TRUE, setLineVboxReg},
 	{"AddReg=VMSvga.AddReg,VM.AddReg,DX.addReg,VM.regextra",           TRUE, TRUE, setLineSvgaReg},
 	{"AddReg=Qemu.AddReg,VM.AddReg,DX.addReg,VM.regextra",             TRUE, TRUE, setLineQemuReg},
+	{"AddReg=VESA.AddReg,VM.AddReg,DX.addReg,VM.regextra",             TRUE, TRUE, setLineVesaReg},
+	{"DelReg=VM.DelReg",                                               TRUE, TRUE, setDeletes},
 	{"HKLM,Software\\vmdisp9x\\svga,RGB565bug,,0",                       TRUE, TRUE, setBug565},
 	{"HKLM,Software\\vmdisp9x\\svga,PreferFIFO,,1",                      TRUE, TRUE, setBugPreferFifo},
 	{"HKLM,Software\\vmdisp9x\\apps\\global\\mesa,SVGA_CLEAR_DX_FLAGS,,0", TRUE, TRUE, setBugDxFlags},
 	{"HKLM,Software\\vmdisp9x\\svga,VRAMLimit,,128",                     FALSE, TRUE, setLimitVRAM},
+	{"HKLM,Software\\vmdisp9x\\vesa,VRAMLimit,,128",                     FALSE, TRUE, setLimitVRAM},
 	//{";mefix:",                                                FALSE, TRUE, setLineMeFix},
 	//{";syscopy:",                                              FALSE, TRUE, setLineSyscopy},
 	{";switcher:",                                                     FALSE, TRUE, setLineSwitcher},
@@ -1107,7 +1156,6 @@ linerRule_t infFixRules[] = {
 	{"vmwsgl32.dll=1",                                                 TRUE, TRUE, setMesaAlternate},
 	{"mesa98.dll=1",                                                   TRUE, TRUE, setMesaAlternate},
 	{"mesa99.dll=1",                                                   TRUE, TRUE, setMesaAlternate},
-	{"HKR,CURRENT",                                                    TRUE, TRUE, saveDelPos},
 	{NULL, FALSE, FALSE, NULL}
 };
 
@@ -1196,34 +1244,48 @@ BOOL set_inf_regs(HWND hwnd)
 	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\svga\\NoMultisample", settingReadDW(CHBX_NO_MULTISAMPLE), dstfile);
 	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\svga\\AsyncMOBs",     settingReadDW(INP_ASYNCMOBS), dstfile);
 
-	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\SVGA_GMR_CACHE_ENABLED",        settingReadDW(CHBX_GMR_CACHE),   dstfile);
+	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\SVGA_GMR_CACHE_ENABLED", settingReadDW(CHBX_GMR_CACHE),   dstfile);
 
 #if 0	
 	if(settingReadDW(IMP_SVGA_MEM_MAX) != 400)
 	{
-		registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\SVGA_MEM_MAX",        settingReadDW(IMP_SVGA_MEM_MAX), dstfile);
+		registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\SVGA_MEM_MAX", settingReadDW(IMP_SVGA_MEM_MAX), dstfile);
 	}
 #endif
 
 	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\MESA_SW_GAMMA_ENABLED", settingReadDW(CHBX_SW_GAMMA),    dstfile);
 	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\SVGA_DMA_TO_FB",        settingReadDW(CHBX_DMA_TO_FB),   dstfile);
 
-	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\svga\\HWCursor",                     settingReadDW(CHBX_HWCURSOR),    dstfile);
+	registryWriteInfDWORD("HKLM\\Software\\vmdisp9x\\svga\\HWCursor", settingReadDW(CHBX_HWCURSOR),    dstfile);
+
+	if(isSettingSet(RAD_LOWDETAIL_1))
+	{
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\hal\\lowdetail",       "1", WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\MESA_NO_DITHER", "1", WINREG_STR, dstfile);
+	}
+	else if(isSettingSet(RAD_LOWDETAIL_2))
+	{
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\hal\\lowdetail",       "2", WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\MESA_NO_DITHER", "1", WINREG_STR, dstfile);
+	}
+	else if(isSettingSet(RAD_LOWDETAIL_3))
+	{
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\hal\\lowdetail",       "3", WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\MESA_NO_DITHER", "1", WINREG_STR, dstfile);
+	}
+	else
+	{
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\hal\\lowdetail",       "0", WINREG_STR, dstfile);
+		registryWriteInf("HKLM\\Software\\vmdisp9x\\apps\\global\\mesa\\MESA_NO_DITHER", "0", WINREG_STR, dstfile);
+	}
 
 	return TRUE;
 }
 
 void apply_delete(const char *target)
 {
-	char *data;
-	size_t data_size;
+	addLine(target, "\r\n[VM.DelRegEx]\r\n");
 	
-	if(del_section_pos == 0)
-		return;
-	
-	if(!truncateFile(target, del_section_pos, &data, &data_size))
-		return;
-
 	const char *line = NULL;
 	int index = 0;
 	for(; (line = iniLine("[delete]", index)) != NULL; index++)
@@ -1231,13 +1293,8 @@ void apply_delete(const char *target)
 		if(line[0] == 'H' && line[1] == 'K')
 		{
 			registryDeleteKeyInf(line, target);
-			//addLine(target, line);
 		}
 	}
-	
-	extendFile(target, data, data_size);
-	freeTruncateData(data);
-	
 }
 
 BOOL apply_reg_fixes(HWND hwnd)
@@ -1252,8 +1309,6 @@ BOOL apply_reg_fixes(HWND hwnd)
 	strcat(dstfile, "\\");
 	strcat(dstfile, iniValue("[softgpu]", "drvfile"));
 
-	apply_delete(dstfile);
-	
 	//if(version_compare(&sysver, &WINVERME) < 0)
 	if(1) /* delete in all cases */
 	{
@@ -1295,6 +1350,8 @@ BOOL apply_reg_fixes(HWND hwnd)
 			}
 		}
 	}
+	
+	apply_delete(dstfile);
 	
 	return TRUE;
 }

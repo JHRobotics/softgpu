@@ -35,6 +35,7 @@ char msg_gpu_names[1024]  = {'\0'};
 
 static int detection   = DETECT_ERR;
 static int installable = SETUP_COPY_ONLY;
+static int gpu_profile = -1;
 
 const char msg_nt[] = 
 	"Your system is NT! "
@@ -66,15 +67,41 @@ void check_SW_HW()
 	static char hwid_buf[64];
 	int errors = 0;
 	int supported = 0;
+	int profile = -1;
+	int last_device_index = -1;
 	
 	for(int i = 0; i < device_count(); i++)
 	{
 		vga_device_t *dev;
 		dev = device_get(i);
 		
+		if(dev->device_index == last_device_index)
+		{
+			/* ignore subids for detected device */
+			continue;
+		}
+		
 		if(device_ini_get(dev, "inf") != NULL)
 		{
+			const char *def_profile = device_ini_get(dev, "default_profile");
+			if(def_profile != NULL)
+			{
+				profile = strtoul(def_profile, NULL, 0);
+			}
 			supported++;
+			last_device_index = dev->device_index;
+		}
+		else
+		{
+			if(i > 0)
+			{
+				/* dont list same devices */
+				vga_device_t *prevdev = device_get(i-1);
+				if(prevdev->device_index == dev->device_index)
+				{
+					continue;
+				}
+			}
 		}
 		
 		if(i > 0)
@@ -159,6 +186,16 @@ void check_SW_HW()
 			}
 		}
 	}
+	
+	if(profile >= 0)
+	{
+		if(installable == SETUP_INSTALL_DRIVER)
+		{
+			//printf("gpu_profile = %d\n", profile);
+			gpu_profile = profile;
+		}
+	}
+	
 }
 
 int detection_status()
@@ -171,4 +208,7 @@ int installable_status()
 	return installable;
 }
 
-
+int get_gpu_profile()
+{
+	return gpu_profile;
+}

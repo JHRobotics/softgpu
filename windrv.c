@@ -258,7 +258,7 @@ const char *device_ini_get(vga_device_t *dev, const char *property)
 				}
 				else if(s_class)
 				{
-					uint16_t class_id = strtoul(s_class, NULL, 0);
+					uint32_t class_id = strtoul(s_class, NULL, 0);
 					if(class_id == dev->pci.cc)
 					{
 						return iniSectionsValue("[pci]", i, property);

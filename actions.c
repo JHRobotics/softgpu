@@ -1154,7 +1154,7 @@ linerRule_t infFixRules[] = {
 	{";3dfx:",                                                         FALSE, TRUE, setLine3DFX},
 	{"mesa3d.dll=1",                                                   TRUE, TRUE, setMesaAlternate},
 	{"vmwsgl32.dll=1",                                                 TRUE, TRUE, setMesaAlternate},
-	{"mesa98.dll=1",                                                   TRUE, TRUE, setMesaAlternate},
+	{"mesa89.dll=1",                                                   TRUE, TRUE, setMesaAlternate},
 	{"mesa99.dll=1",                                                   TRUE, TRUE, setMesaAlternate},
 	{NULL, FALSE, FALSE, NULL}
 };

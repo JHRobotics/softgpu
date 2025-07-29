@@ -83,6 +83,10 @@ NOTE: you can enter numeric values as DWORD or as string, it'll be converted aut
 | VRAMLimit | 128      | Maximum video RAM (in MB) exposed to system, allow to use adapters when have more then 256 MB VRAM, VRAM is usually utilized only by frame buffers, 32 MB is usually enough for FullHD resolution (1920 x 1080).
 | MTRR | 1             | Allow to use Intel MTRR registry to accelerate CPU to VRAM operations |
 | DosWindowSetMode | 0 | Allow to DOS application to call set mode when DOS application is in window mode |
+| HWDoubleBuffer | 2 | 0 - double buffering is fully emulated, 
+| | | 1 - allow frame buffer swap (if supported),
+| | | 2 - allow frame buffer swap during vertical retrace (if supported).
+| NoMemTest | 0 | when 1 disable video memory testing. Some GPUs may have some I/O in linear frame buffer space and overwrite this memory can confuse the device. |
 
 
 ### DosWindowSetMode
@@ -131,22 +135,25 @@ These keys have same names and behaviour like [Mesa Environment Variables](https
 
 ## OpenGlide
 
-"Disabled"="1"
-"FogEnable"="1"
-"InitFullScreen"="0"
-"Textures32bit"="1"
-"HideCursor"="2"
-"NoSplash"="0"
-"SwapInterval"="0"
-"Resolution"="2"
-
-"NumTMU"="2"
-"SSTType="3"
-"TextureMemorySize"="4"
-"FrameBufferMemorySize"="4"
+| Name | Default | Description |
+| ---- | ------- | ----------- |
+| Disabled | 0 |
+| FogEnable | 0 |
+| InitFullScreen | 0 |
+| Textures32bit | 0 |
+| HideCursor | 1 |
+| NoSplash | 0 |
+| SwapInterval | 0 |
+| Resolution | 1 |
+| NumTMU | 1 |
+| SSTType | 1 |
+| TextureMemorySize | 4 |
+| FrameBufferMemorySize | 4 |
 
 
 ## WINE
+
+
 
 "VideoMemorySize"="256"
 
